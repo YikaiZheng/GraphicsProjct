@@ -5,10 +5,12 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CameraControls } from './CameraControl';
 import { ToolsGroup } from './ToolsGroup';
 import { cube, connector, emittor, receiver } from './InteractiveObjects'
+import {Dash, DashesGroup, RaysGroup} from './RaysGroup'
 
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.layers.enable(2)
 const clock = new THREE.Clock();
 console.log(window.innerWidth)
 console.log(window.innerHeight)
@@ -69,6 +71,7 @@ gltfLoader.load(url, (gltf) => {
 	light.position.set(0, 10, 0)
 	light.target.position.set(-5, 0, 0)
 	scene.add(light)
+	scene.add(ambientlight)
 	scene.add(light.target)
 }
 
@@ -86,10 +89,12 @@ firstPersonControl.constraintVertical = true;
 firstPersonControl.verticalMin = 1.0;
 firstPersonControl.verticalMax = 2.0;
 
+const dashes = new DashesGroup();
 const tools = new ToolsGroup();
+const lasers = new RaysGroup();
 const cube1 = new cube(0);
 const cube2 = new cube(1);
-const connector1 = new connector(2,gltfLoader);
+const connector1 = new connector(2,gltfLoader,dashes,lasers);
 connector1.position.set(0,0.75,2);
 cube1.position.set(0,0.3,4);
 cube2.position.set(3,0.3,8);
@@ -106,13 +111,18 @@ tools.add(cube2);
 tools.add(connector1);
 tools.add(emittor1);
 tools.add(receiver1);
+lasers.addintersectobjects(tools.children);
 tools.listenToPointerEvents(renderer,camera);
 scene.add(tools);
+scene.add(dashes);
+scene.add(lasers);
 
 
 function animate() {
 	const delta = clock.getDelta();
 	firstPersonControl.update(delta);
+	dashes.update();
+	lasers.update();
 	renderer.render( scene, camera );
 }
 

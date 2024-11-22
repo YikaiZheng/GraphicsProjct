@@ -10,8 +10,6 @@ import {
 const _pointer = new Vector2();
 const _event = { type: '', data: _pointer, targetobject: null};
 
-const _raycaster = new Raycaster();
-
 class ToolsGroup extends Group {
     constructor() {
         super();
