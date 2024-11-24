@@ -1,22 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// export class receiver extends Mesh{
-//     constructor(mesh, targetlist){
-//         super(mesh.geometry,mesh.material);
-//         this.targetlist = targetlist;
-//     }
-
-//     activate() {
-//         for (i in targetlist){
-//             targetlist[i].activate();
-//         }
-//     }
-// }
-
-// class emittor {
-
-// }
+const _event = {type:''}
 
 export class connector extends THREE.Mesh {
     constructor(id,loader,dashgroup,lasergroup){
@@ -44,6 +29,7 @@ export class connector extends THREE.Mesh {
         this.use = 'connect';
         this.lasergroup = lasergroup;
         this.dashgroup = dashgroup;
+        this._attached = false;
         this._connected = [];
         this._source = [];
         this._color = 0x000000;
@@ -61,11 +47,11 @@ function computeColor( sourcelist ){        //This function should be called eac
     var color = 0x000000;
     for (var object of sourcelist) {
         if (object.use === 'emit'){
-            if(color!=0x000000 && color!= object.color){  //connected to two emittors of different colors, connector is disabled.
+            if(color!=0x000000 && color!= object._color){  //connected to two emittors of different colors, connector is disabled.
                 return 0x000000;
             }
             if(color===0x000000){
-                color = object.color;
+                color = object._color;
             }
         }
     }
@@ -73,12 +59,12 @@ function computeColor( sourcelist ){        //This function should be called eac
         return color;
     }
     for (var object of sourcelist) {
-        if (object.use === 'connect' && object.color!=0x000000){    //loop through lit connectors
-            if(color!=0x000000 && color!= object.color){  //connected to two connectors of different colors, connector is disabled. 
+        if (object.use === 'connect' && object._color!=0x000000){    //loop through lit connectors
+            if(color!=0x000000 && color!= object._color){  //connected to two connectors of different colors, connector is disabled. 
                 return 0x000000;
             }
             if(color===0x000000){
-                color = object.color;
+                color = object._color;
             }
         }
     }
@@ -86,10 +72,12 @@ function computeColor( sourcelist ){        //This function should be called eac
 }
 
 function onPickTool( event ) {
+    this._attached = true;
     this.position.set(0.5,-0.9,-1);
     this.quaternion.set(0,0,0,1);
-    this.source = [];
+    this._source = [];
     this._color = 0x000000;
+    this.children[0].children[0].material.emissive = new THREE.Color(0xbbbbbb);
     this.lasergroup.deleteconnectedLaser(this);
     for(var object of this._connected){
         this.dashgroup.addline(this,object);
@@ -97,64 +85,82 @@ function onPickTool( event ) {
 }
 
 function onPlaceTool( event ) {
+    this._attached = false;
     this.quaternion.set(0,0,0,1);
     this.position.y = 0.75;
+    this.updateMatrixWorld();
     this.dashgroup.clear();
     for(var object of this._connected){
-        if(object.use === 'emit' || (object.use === 'connect' && object.color!= 0x000000)){
-            console.log('adding laser')
-            this.lasergroup.addLaser(object.color,object,this);
+        if(object.use === 'emit' || (object.use === 'connect' && object._color!= 0x000000)){
+            console.log('onplace adding laser')
+            this.lasergroup.addLaser(object._color,object,this);
         }
     }
 }
 
-function onReceive( event) {                                //when receive a laserBeam, recompute color and send laserBeam to objects not in sourcelist.
-    this._source.push(event.sourceobject);
-    const color = computeColor(this._source);
-    // this.children[0].children[0].material.emissive = color;
-    // this.children[0].children[0].material.needsUpdate = true;
-    this.lasergroup.deletestartingLaser(this);
-    if(color!=0x000000){
-        for(var object of this._connected){
-            var source = false;
-            for(var src of this._source){
-                if(src.identity === object.identity){
-                    source = true;
+function onReceive( event) {
+    if(!this._attached){
+        this._source.push(event.sourceobject);
+        const color = computeColor(this._source);
+        if(color === 0x000000){
+            this.children[0].children[0].material.emissive = new THREE.Color(0x888888);
+        }
+        else{
+            this.children[0].children[0].material.emissive = new THREE.Color(color);
+        }
+        this.children[0].children[0].material.needsUpdate = true;
+        this.lasergroup.deletestartingLaser(this);
+        if(color!=0x000000){
+            for(var object of this._connected){
+                var source = false;
+                for(var src of this._source){
+                    if(src.identity === object.identity){
+                        source = true;
+                    }
+                }
+                if(!source){
+                    console.log('onreceive addlaser')
+                    this.lasergroup.addLaser(color,this,object);
                 }
             }
-            if(!source){
-                this.lasergroup.addLaser(color,this,object);
-            }
         }
-    }
-    this._color = color;
+        this._color = color;
+    }                                //when receive a laserBeam, recompute color and send laserBeam to objects not in sourcelist.
 }
 
 function onBreak(event) {
-    for(var object of this._source){
-        if(object.identity === event.sourceobject.identity){
-            const index = this._source.indexOf(object);
-            this._source.splice(index, 1);
+    if(!this._attached){
+        // for(var object of this._source){
+            // if(object.identity === event.sourceobject.identity){
+            //     const index = this._source.indexOf(object);
+            //     this._source.splice(index, 1);
+            // }}
+            this._source = this._source.filter(function(object){return object.identity!=event.sourceobject.identity})
+        const color = computeColor(this._source);
+        if(color === 0x000000){
+            this.children[0].children[0].material.emissive = new THREE.Color(0x888888);
         }
-    }
-    const color = computeColor(this._source);
-    // this.children[0].children[0].material.emissive = color;
-    // this.children[0].children[0].material.needsUpdate = true;
-    this.lasergroup.deletestartingLaser(this);
-    if(color!=0x000000){
-        for(var object of this._connected){
-            var source = false;
-            for(var src of this._source){
-                if(src.identity === object.identity){
-                    source = true;
+        else{
+            this.children[0].children[0].material.emissive = new THREE.Color(color);
+        }
+        this.children[0].children[0].material.needsUpdate = true;
+        this.lasergroup.deletestartingLaser(this);
+        if(color!=0x000000){
+            for(var object of this._connected){
+                var source = false;
+                for(var src of this._source){
+                    if(src.identity === object.identity){
+                        source = true;
+                    }
+                }
+                if(!source && object.use!='emit' && !object._attached){
+                    console.log('onbreak addlaser')
+                    this.lasergroup.addLaser(color,this,object);
                 }
             }
-            if(!source){
-                this.lasergroup.addLaser(color,this,object);
-            }
         }
+        this._color = color;
     }
-    this._color = color;
 }
 
 function onHoverConnector( event ) {
@@ -182,14 +188,18 @@ function onConnect( event ) {
         if (object.identity === event.targetobject.identity){
             const index = this._connected.indexOf(object);
             this._connected.splice(index, 1);
-            this.dashgroup.deleteline(this,event.targetobject);
+            if(this._attached){
+                this.dashgroup.deleteline(this,event.targetobject);
+            }
             included = true;
             break;
         }
     }
     if(!included){
         this._connected.push(event.targetobject);
-        this.dashgroup.addline(this,event.targetobject);
+        if(this._attached){
+            this.dashgroup.addline(this,event.targetobject);
+        }
     }
     console.log(this._connected)
 }
@@ -268,7 +278,7 @@ export class emittor extends THREE.Mesh {
         this.identity = id;
         this.click = 'connect';
         this.use = 'emit';
-        this.color = color;
+        this._color = color;
         this.connectposition = new THREE.Vector3(0,0,0);
         this.addEventListener('mouseover',onHoverEmittor);
         this.addEventListener('mouseout',onMouseoutEmittor);
@@ -293,7 +303,7 @@ function onMouseoutEmittor( event ) {
 }
 
 export class receiver extends THREE.Mesh{
-    constructor(id,color,loader){
+    constructor(id,color,loader,targetobject){
         const geometry = new THREE.CylinderGeometry(0.3,0.3,0.1);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
         super(geometry,Mat);
@@ -324,10 +334,13 @@ export class receiver extends THREE.Mesh{
         this.color = color;
         this.click = 'connect';
         this.use = 'receive';
-        this._activated = false;
+        this._sourcelist = [];
+        this.targetobject = targetobject;
         this.connectposition = new THREE.Vector3(0,0,0);
         this.addEventListener('mouseover',onHoverReceiver);
         this.addEventListener('mouseout',onMouseoutReceiver);
+        this.addEventListener('receive',onReceiverActivate);
+        this.addEventListener('break',onReceiverBreak);
     }
 }
 
@@ -355,7 +368,84 @@ function onMouseoutReceiver(event){
     object.material.needsUpdate = true;
 }
 
+function onReceiverActivate(event){
+    if(event.color===this.color){
+        if(this._sourcelist.length === 0){
+            _event.type = 'activate'
+            this.targetobject.dispatchEvent(_event);
+        }
+        this._sourcelist.push(event.sourceobject);
+    }
+}
 
-// class door extends Mesh {
+function onReceiverBreak(event){
+    if(event.color===this.color){
+        for(var object of this._sourcelist){
+            if(object.identity===event.sourceobject.identity){
+                const index = this._sourcelist.indexOf(object);
+                this._sourcelist.splice(index, 1);
+                break;
+            }
+        }
+        if(this._sourcelist.length===0){
+            _event.type = 'deactivate'
+            this.targetobject.dispatchEvent(_event);
+        }
+    }
+}
 
-// }
+
+export class door extends THREE.Mesh {
+    constructor(id,position,orientation){
+        const geometry = new THREE.BoxGeometry(3,2,0.05);
+        const material = new THREE.MeshPhongMaterial({  color: '#800080',emissive: '#800080',specular: '#cd00cd',shininess: 10,transparent: true,opacity: 0.6});
+        super(geometry,material);
+        this.identity = id;
+        this.position.set(position.x,position.y,position.z);
+        this.orientation = orientation;
+        this.addEventListener('activate',onActivate);
+        this.addEventListener('deactivate',onDeactivate);
+        this.name = 'door';
+        this.click = ['none'];
+        this.use = 'none';
+        this.openAction = null;
+        this.closeaction = null;
+    }
+    setAnimation(mixer){
+        const times = [0,1];
+        var openvalues = [];
+        var closevalues = [];
+        if(this.orientation==='x'){
+            openvalues = [this.position.x,this.position.y,this.position.z,this.position.x-1.5,this.position.y,this.position.z];
+            closevalues = [this.position.x-1.5,this.position.y,this.position.z,this.position.x,this.position.y,this.position.z];
+        }
+        else if(this.orientation==='z'){
+            openvalues = [this.position.x,this.position.y,this.position.z,this.position.x,this.position.y,this.position.z-1.5];
+            closevalues = [this.position.x,this.position.y,this.position.z-1.5,this.position.x,this.position.y,this.position.z];
+            this.rotation.y = Math.PI/2;
+        }
+        const openposKF = new THREE.KeyframeTrack('door.position', times, openvalues);
+        const closeposKF = new THREE.KeyframeTrack('door.position', times, closevalues);
+        const openscaleKF = new THREE.KeyframeTrack('door.scale',times,[1,1,1,0,1,1]);
+        const closescaleKF = new THREE.KeyframeTrack('door.scale',times,[0,1,1,1,1,1]);
+        const open = new THREE.AnimationClip("open", 1, [openposKF, openscaleKF]);
+        const close = new THREE.AnimationClip("close", 1, [closeposKF, closescaleKF]);
+        this.openAction = mixer.clipAction(open);
+        this.closeAction = mixer.clipAction(close);
+        this.openAction.clampWhenFinished = true;
+        this.openAction.loop = THREE.LoopOnce;
+        this.closeAction.clampWhenFinished = true;
+        this.closeAction.loop = THREE.LoopOnce;
+    }
+}
+
+function onActivate(event){
+    this.closeAction.stop();
+    this.openAction.play();
+}
+
+function onDeactivate(event){
+    this.closeAction.clampWhenFinished = true;
+    this.openAction.stop();
+    this.closeAction.play();
+}

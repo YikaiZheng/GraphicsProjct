@@ -4,7 +4,7 @@ import WebGL from 'three/addons/capabilities/WebGL.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CameraControls } from './CameraControl';
 import { ToolsGroup } from './ToolsGroup';
-import { cube, connector, emittor, receiver } from './InteractiveObjects'
+import { cube, connector, emittor, receiver, door } from './InteractiveObjects'
 import {Dash, DashesGroup, RaysGroup} from './RaysGroup'
 
 
@@ -89,13 +89,21 @@ firstPersonControl.constraintVertical = true;
 firstPersonControl.verticalMin = 1.0;
 firstPersonControl.verticalMax = 2.0;
 
+const mixers = [];
+
 const dashes = new DashesGroup();
 const tools = new ToolsGroup();
 const lasers = new RaysGroup();
 const cube1 = new cube(0);
 const cube2 = new cube(1);
+const door1 = new door(11,new THREE.Vector3(0,1,-5),'x');
+const mixer = new THREE.AnimationMixer(door1);
+door1.setAnimation(mixer);
+mixers.push(mixer);
 const connector1 = new connector(2,gltfLoader,dashes,lasers);
 connector1.position.set(0,0.75,2);
+const connector2 = new connector(10,gltfLoader,dashes,lasers);
+connector1.position.set(0,0.75,3);
 cube1.position.set(0,0.3,4);
 cube2.position.set(3,0.3,8);
 const emittor1 = new emittor(3,0x3333ff,gltfLoader);
@@ -103,14 +111,16 @@ emittor1.position.set(2,1,1);
 var quaternion = new THREE.Quaternion();
 quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
 emittor1.quaternion.set(quaternion.x,quaternion.y,quaternion.z,quaternion.w);
-const receiver1 = new receiver(4,0x3333ff,gltfLoader);
+const receiver1 = new receiver(4,0x3333ff,gltfLoader,door1);
 receiver1.position.set(2,1,0);
 
 tools.add(cube1);
 tools.add(cube2);
 tools.add(connector1);
+tools.add(connector2);
 tools.add(emittor1);
 tools.add(receiver1);
+tools.add(door1);
 lasers.addintersectobjects(tools.children);
 tools.listenToPointerEvents(renderer,camera);
 scene.add(tools);
@@ -123,6 +133,9 @@ function animate() {
 	firstPersonControl.update(delta);
 	dashes.update();
 	lasers.update();
+	for(var mixer of mixers){
+		mixer.update(delta)
+	}
 	renderer.render( scene, camera );
 }
 

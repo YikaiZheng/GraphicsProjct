@@ -13,6 +13,7 @@ function computepositions(startobject,endobject){
     var endposition = new THREE.Vector3;
     var endbasequaternion = new THREE.Quaternion;
     var endbasescale = new THREE.Vector3;
+    // console.log(endobject)
     startobject.matrixWorld.decompose( startposition, startbasequaternion, startbasescale );
     endobject.matrixWorld.decompose(endposition, endbasequaternion, endbasescale);
     startposition.add(startobject.connectposition);
@@ -26,14 +27,13 @@ export class LaserBeam extends THREE.Mesh{
         const pos = computepositions(startobject,endobject);
         const startposition = pos[0];
         const endposition = pos[1];
-        console.log(startposition);
-        console.log(endposition);
+        // console.log(startposition);
+        // console.log(endposition);
         const dvector = new THREE.Vector3().subVectors(endposition, startposition);
         length = dvector.length();
-        console.log(dvector);
         const theta = Math.acos(dvector.y/length);
         var phi = Math.atan(dvector.x/dvector.z);
-        console.log(phi)
+        // console.log(phi)
         if(dvector.z<0){
             phi = phi + Math.PI;
         }
@@ -74,7 +74,7 @@ export class LaserBeam extends THREE.Mesh{
     else if(color===0x3333ff){
         color_sprite = 'blue'
     }
-    var textureUrl	= `./public/${color_sprite}.jpg`;
+    var textureUrl	= `/${color_sprite}.jpg`;
 	var texture	= new THREE.TextureLoader().load(textureUrl)	
 	var material	= new THREE.SpriteMaterial({
 		map		: texture,
@@ -100,39 +100,40 @@ export class LaserBeam extends THREE.Mesh{
     this.color = color
     console.log(this)
     }
-    intersect(intersectobjects){
-        var intersects = this.raycaster.intersectObjects(intersectobjects, false);
-        console.log(intersects.length)
+    intersect(intersectobjects){       
+        var intersects = this.raycaster.intersectObjects(intersectobjects, false);         //TODO: Recompute origin and direction before intersecting
+        // console.log(intersects.length)
         var position = intersects[0].point;
         const pos = computepositions(this.startobject,this.endobject);
         const startposition = pos[0];
         const dvector = new THREE.Vector3().subVectors(position, startposition);
         length = dvector.length();
-        console.log(dvector);
+        // console.log(dvector);
         const theta = Math.acos(dvector.y/length);
         var phi = Math.atan(dvector.x/dvector.z);
-        console.log(phi)
+        // console.log(phi)
         if(dvector.z<0){
             phi = phi + Math.PI;
         }
         const euler = new THREE.Euler(theta,phi,0,'YXZ');
         this.position.set(startposition.x+dvector.x/2,startposition.y+dvector.y/2,startposition.z+dvector.z/2);
-        this.rotation.copy(euler);
+        this.rotation.copy(euler);                                                                                        //First update the geometry of the laser. This can be helpful when connectors' position change without picking it (e.g. lifted up by fan)
         var distance = position.distanceTo(this.raycaster.ray.origin)
-        this.scale.y = distance+0.01;
+        this.scale.y = distance+0.05;
         this.children[this.children.length-1].scale.y = 0.49/(distance+0.01);
         var intersectobject = intersects[0].object;
         if(intersectobject.identity===this.startobject.identity){
             intersectobject = intersects[1].object;
         }
-        if(intersectobject.identity === this.endobject.identity && this._intersectobject.identity!=this.endobject.identity){
+        if(intersectobject.identity === this.endobject.identity && this._intersectobject.identity!=this.endobject.identity){        //If reach endobject, the two objects are connected
             _event.type = 'receive';
             _event.color = this.color;
             _event.sourceobject = this.startobject;
             this.endobject.dispatchEvent(_event);
         }
-        if(intersectobject.identity != this.endobject.identity && this._intersectobject.identity===this.endobject.identity){
+        if(intersectobject.identity != this.endobject.identity && this._intersectobject.identity===this.endobject.identity){        //If cannot reach endobject, disconnected
             _event.type = 'break';
+            _event.color = this.color;
             _event.sourceobject = this.startobject;
             this.endobject.dispatchEvent(_event);
         }
@@ -141,6 +142,8 @@ export class LaserBeam extends THREE.Mesh{
     delete(){
         if(this._intersectobject.identity === this.endobject.identity){
             _event.type = 'break';
+            _event.color = this.color;
+            _event.sourceobject = this.startobject;
             this.endobject.dispatchEvent(_event);                    
         }
         this.material.dispose();
@@ -152,10 +155,10 @@ function generateLaserBodyCanvas(){
     // init canvas
     var canvas	= document.createElement( 'canvas' );
     var context	= canvas.getContext( '2d' );
-    canvas.width	= 1;
-    canvas.height	= 64;
+    canvas.width	= 64;
+    canvas.height	= 1;
     // set gradient
-    var gradient	= context.createLinearGradient(0, 0, canvas.width, canvas.height);		
+    var gradient	= context.createLinearGradient(0, 0, canvas.width, canvas.height);	        //The edge of the laser is not as bright as the center	
     gradient.addColorStop( 0  , 'rgba(  0,  0,  0,0.1)' );
     gradient.addColorStop( 0.1, 'rgba(160,160,160,0.3)' );
     gradient.addColorStop( 0.5, 'rgba(255,255,255,0.5)' );
@@ -175,7 +178,9 @@ export class RaysGroup extends THREE.Group{
         this._intersectobjects = []
     }
     addintersectobjects(intersectobjects){
-        this._intersectobjects = intersectobjects;
+        for(var object of intersectobjects){
+            this._intersectobjects.push(object);
+        }
     }
     addLaser(color,startobject,endobject){
         this.add(new LaserBeam(color,startobject,endobject,this._identity));
@@ -207,12 +212,23 @@ export class RaysGroup extends THREE.Group{
     }
     update(){
         for(var laser of this.children){
-            const intersectobjects = this._intersectobjects;
+            const intersectobjects = [];
+            for(var object of this._intersectobjects){
+                intersectobjects.push(object);
+            }
             for(var new_laser of this.children){
-                if(new_laser.color!=laser.color){
-                    intersectobjects.push(new_laser)
+                if(new_laser.startobject.identity!=laser.startobject.identity &&            //Only intersect lasers that do not have common endpoints
+                    new_laser.endobject.identity!=laser.startobject.identity && 
+                    new_laser.startobject.identity!=laser.endobject.identity && 
+                    new_laser.endobject.identity!=laser.endobject.identity){
+                    intersectobjects.push(new_laser);
                 }
             }
+            // for(var new_laser of this.children){
+            //     if(new_laser.color!=laser.color){
+            //         intersectobjects.push(new_laser);
+            //     }
+            // }
             laser.intersect(intersectobjects)
         }
     }

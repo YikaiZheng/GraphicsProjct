@@ -75,8 +75,13 @@ class ToolsGroup extends Group {
                         console.log(intersects[0].object);
                         _event.targetobject = intersects[0].object;
                         _event.type = 'connect';
+                        connectobject.dispatchEvent(_event);
+                        if(intersects[0].object.use==='connect'){
+                            _event.targetobject = connectobject;
+                            _event.type = 'connect';
+                            intersects[0].object.dispatchEvent(_event);
+                        }
                     }
-                    connectobject.dispatchEvent(_event);
                 }
             }
         }
