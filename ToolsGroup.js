@@ -7,7 +7,7 @@ import {
     StaticCopyUsage
 } from 'three';
 
-const _pointer = new Vector2();
+const _pointer = new Vector2(0, 0);
 const _event = { type: '', data: _pointer, targetobject: null};
 
 const _raycaster = new Raycaster();
@@ -34,9 +34,10 @@ class ToolsGroup extends Group {
 
 			const rect = renderer.domElement.getBoundingClientRect();
 
-			_pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
-			_pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
-
+			// _pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
+			// _pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
+            _pointer.x = 0;
+            _pointer.y = 0;
 			raycaster.setFromCamera( _pointer, camera );
 
 			const intersects = raycaster.intersectObjects( scope.children, false );
@@ -81,17 +82,20 @@ class ToolsGroup extends Group {
                     connectobject.dispatchEvent(_event);
                 }
             }
+            console.log(_event.type);
         }
 
 		function onPointerEvent( event ) {
 
+            console.log("MOUSE MOVING");
 			event.stopPropagation();
 
 			const rect = renderer.domElement.getBoundingClientRect();
 
-			_pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
-			_pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
-
+			// _pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
+			// _pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
+            _pointer.x = 0;
+            _pointer.y = 0;
 			raycaster.setFromCamera( _pointer, camera );
 
 			const intersects = raycaster.intersectObjects( scope.children, false );
@@ -130,15 +134,16 @@ class ToolsGroup extends Group {
                     scope.currentObject = object;
                 }
             }
+            console.log(_event.type);
 		}
 
 		// element.addEventListener( 'pointerdown', onPointerEvent );
 		// element.addEventListener( 'pointerup', onPointerEvent );
-		element.addEventListener( 'pointermove', onPointerEvent );
+		// element.addEventListener( 'pointermove', onPointerEvent );
 		// element.addEventListener( 'mousedown', onPointerEvent );
 		// element.addEventListener( 'mouseup', onPointerEvent );
-		element.addEventListener( 'mousemove', onPointerEvent );
-		element.addEventListener( 'click', onClickEvent );
+		document.addEventListener( 'mousemove', onPointerEvent );
+		document.addEventListener( 'click', onClickEvent );
 
 	}
 
