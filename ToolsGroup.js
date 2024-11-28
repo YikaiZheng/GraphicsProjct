@@ -10,14 +10,22 @@ import {
 const _pointer = new Vector2(0, 0);
 const _event = { type: '', data: _pointer, targetobject: null};
 
-const _raycaster = new Raycaster();
-
 class ToolsGroup extends Group {
-    constructor() {
+    constructor(player, scene) {
         super();
         this._attached = [];
         console.log(this._attached.length);
         this.currentObject = null;
+        this.cnt = 0;
+        this.player = player;
+        this.scene = scene;
+        // console.log(this.scene);
+    }
+
+    add(object) {
+        super.add(object);
+        object.setId(this.cnt);
+        this.cnt += 1;
     }
 
     listenToPointerEvents( renderer, camera ) {
@@ -46,7 +54,8 @@ class ToolsGroup extends Group {
                     _event.type = 'place';
                     const object = scope._attached[0];
                     console.log(object.parent);
-                    camera.remove( object );
+                    scope.scene.remove( object );
+                    scope.player.remove_obj(object);
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
                     scope.attach(object);
                     console.log(object.parent);
@@ -63,8 +72,9 @@ class ToolsGroup extends Group {
                     console.log(object.parent);
                     scope.remove( object );
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
-                    camera.attach(object);
-                    console.log(object.parent);
+                    console.log(this.scene);
+                    scope.scene.add(object);
+                    scope.player.add_obj(object, new Vector3(0, 2, -5));
                     _event.type = 'pick';
 
                     _event.data.set( uv.x, 1 - uv.y );
@@ -78,6 +88,12 @@ class ToolsGroup extends Group {
                         console.log(intersects[0].object);
                         _event.targetobject = intersects[0].object;
                         _event.type = 'connect';
+                        connectobject.dispatchEvent(_event);
+                        if(intersects[0].object.use==='connect'){
+                            _event.targetobject = connectobject;
+                            _event.type = 'connect';
+                            intersects[0].object.dispatchEvent(_event);
+                        }
                     }
                     connectobject.dispatchEvent(_event);
                 }

@@ -2,25 +2,26 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 
-export class PhysicsObject {
-    constructor({body, mesh}) {
+export class PhysicsObject extends THREE.Mesh {
+    constructor(geometry, material, body) {
+        super(geometry, material)
         this.body = body;
-        this.mesh = mesh;
-        // this.mesh.position.copy(this.body.position);
-        // this.mesh.quaternion.copy(this.body.quaternion);
+        // this.position.copy(this.body.position);
+        // this.quaternion.copy(this.body.quaternion);
     }
 
     // Method to synchronize the mesh with the physics body
     sync() {
-        this.mesh.position.copy(this.body.position);
-        this.mesh.quaternion.copy(this.body.quaternion);
+        this.position.copy(this.body.position);
+        this.quaternion.copy(this.body.quaternion);
     }
 
     // Add the physics body to the world and the mesh to the scene
     addTo(world, scene) {
         world.addBody(this.body); // Add to CANNON world
-        scene.add(this.mesh);     // Add to THREE scene
+        scene.add(this);     // Add to THREE scene
     }
+
 }
 
 
@@ -35,12 +36,8 @@ export class PlayerObject extends PhysicsObject {
         body_player.position.set(position.x, position.y, position.z);
         const mesh_Geo = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
         const mesh_Mat = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-        const mesh_player = new THREE.Mesh(mesh_Geo, mesh_Mat);
         
-        super({
-            body: body_player, 
-            mesh: mesh_player
-        });
+        super(mesh_Geo, mesh_Mat, body_player);
         
         this.init_camera_offset = new THREE.Vector3(0, 2, -0.55);
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -59,8 +56,22 @@ export class PlayerObject extends PhysicsObject {
         
         this.velocity = new THREE.Vector3(0, 0, 0);
 
-        // this.mesh.position.copy(this.body.position);
-        // this.mesh.quaternion.copy(this.body.quaternion);
+
+        this.attached = [];
+        this.attached_offset = [];
+        // this.position.copy(this.body.position);
+        // this.quaternion.copy(this.body.quaternion);
+    }
+
+    add_obj(object, offset) {
+        this.attached.push(object);
+        this.attached_offset.push(offset);
+    }
+
+    remove_obj(object) {
+        var idx = this.attached.indexOf(object);
+        this.attached.splice(idx, 1);
+        this.attached_offset.splice(idx, 1);
     }
 
     set_velocity(v) {
@@ -107,14 +118,24 @@ export class PlayerObject extends PhysicsObject {
         this.facing_direction = this.init_facing_direction.clone();
         this.facing_direction.applyQuaternion(threeQuaternion);
 
-        console.log()
+        for(let i=0; i<this.attached.length; i++) {
+            var obj_offset = this.attached_offset[i].clone();
+            obj_offset.applyQuaternion(this.camera.quaternion);
+            var obj_position = new THREE.Vector3(position.x, position.y, position.z);
+            obj_position.add(obj_offset);
+            this.attached[i].body.position.set(obj_position.x, obj_position.y, obj_position.z);
+            this.attached[i].body.quaternion.set(this.body.quaternion.x, this.body.quaternion.y, this.body.quaternion.z, this.body.quaternion.w);
+            // console.log(this.attached[i].body.position);
+            // console.log(this.attached[i].position);
+
+        }
 
         super.sync();
     }
 
     addTo(world, scene) {
         scene.add(this.camera); 
-        scene.add(this.mesh);
+        scene.add(this);
         world.addBody(this.body);
     }
 }
