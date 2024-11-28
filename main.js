@@ -4,7 +4,8 @@ import WebGL from 'three/addons/capabilities/WebGL.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CameraControls } from './CameraControl';
 import { ToolsGroup } from './ToolsGroup';
-import { cube, connector, emittor, receiver } from './InteractiveObjects'
+import { cube, connector, emittor, receiver, door } from './InteractiveObjects'
+import {Dash, DashesGroup, RaysGroup} from './RaysGroup'
 import { PhysicsObject, PlayerObject } from './PhysicsObjects'
 import { PlayerControl } from './PlayerControl'
 
@@ -26,11 +27,7 @@ const sphere_Body = new CANNON.Body({
 sphere_Body.position.set(0, 5, 0); // Set the position
 const sphere_Geometry = new THREE.SphereGeometry(radius, 32, 32);
 const sphere_Material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-const sphere_Mesh = new THREE.Mesh(sphere_Geometry, sphere_Material);
-const sphere = new PhysicsObject({
-  	body: sphere_Body,
-	mesh: sphere_Mesh,
-});
+const sphere = new PhysicsObject(sphere_Geometry, sphere_Material, sphere_Body);
 sphere.addTo(world, scene);
 
 const boxSize = { x: 1, y: 2, z: 1 };
@@ -43,11 +40,7 @@ const box_Body = new CANNON.Body({
 box_Body.position.set(0, 10, 0); // Set the position
 const box_Geometry = new THREE.BoxGeometry(1, 2, 1);
 const box_Material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-const box_Mesh = new THREE.Mesh(box_Geometry, box_Material);
-const box = new PhysicsObject({
-	body: box_Body,
-	mesh: box_Mesh,
-})
+const box = new PhysicsObject(box_Geometry, box_Material, box_Body)
 box.addTo(world, scene);
 
 
@@ -63,15 +56,11 @@ const planeMaterial = new THREE.MeshStandardMaterial({
   color: 0x00ff00,
   side: THREE.DoubleSide, // Make it visible from both sides
 });
-const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-planeMesh.receiveShadow = true; // To cast shadows if needed
-const ground = new PhysicsObject({
-	body: groundBody,
-  	mesh: planeMesh,
-});
+const ground = new PhysicsObject(planeGeometry, planeMaterial, groundBody);
+ground.receiveShadow = true; // To cast shadows if needed
 ground.addTo(world, scene);
 
-const starting_position = new THREE.Vector3(0, 10, 20);
+const starting_position = new THREE.Vector3(0, 2, 20);
 var player1 = new PlayerObject(starting_position);
 var player1_Control = new PlayerControl(player1);
 player1.addTo(world, scene);
@@ -154,29 +143,53 @@ gltfLoader.load(url, (gltf) => {
 // firstPersonControl.verticalMin = 1.0;
 // firstPersonControl.verticalMax = 2.0;
 
-const tools = new ToolsGroup();
-const cube1 = new cube(0);
-const cube2 = new cube(1);
-const connector1 = new connector(2,gltfLoader);
-connector1.position.set(0,0.75,2);
-cube1.position.set(0,0.3,4);
-cube2.position.set(3,0.3,8);
-const emittor1 = new emittor(3,0x3333ff,gltfLoader);
-emittor1.position.set(2,1,1);
+const mixers = [];
+
+const dashes = new DashesGroup();
+const tools = new ToolsGroup(player1, scene);
+const lasers = new RaysGroup();
+const cube1 = new cube();
+const cube2 = new cube();
+const door1 = new door(11, new THREE.Vector3(0, 1, -5), 'x');
+const mixer = new THREE.AnimationMixer(door1);
+door1.setAnimation(mixer);
+mixers.push(mixer);
+const connector1 = new connector(gltfLoader);
+connector1.body.position.set(0, 0.75, 2);
+const connector2 = new connector(gltfLoader, dashes,lasers);
+connector2.body.position.set(0, 0.75, 3);
+cube1.body.position.set(0, 0.9, 4);
+cube2.body.position.set(3, 0.9, 8);
+const emittor1 = new emittor(0x3333ff, gltfLoader);
+emittor1.body.position.set(2, 1, 1);
 var quaternion = new THREE.Quaternion();
 quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
-emittor1.quaternion.set(quaternion.x,quaternion.y,quaternion.z,quaternion.w);
-const receiver1 = new receiver(4,0x3333ff,gltfLoader);
-receiver1.position.set(2,1,0);
+emittor1.body.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+const receiver1 = new receiver(0x3333ff, gltfLoader, door1);
+receiver1.body.position.set(2, 1, 0);
 
+
+
+cube1.addTo(world, scene);
+cube2.addTo(world, scene);
+connector1.addTo(world, scene);
+connector2.addTo(world, scene);
+emittor1.addTo(world, scene);
+receiver1.addTo(world, scene);
+door1.addTo(world, scene);
 
 tools.add(cube1);
 tools.add(cube2);
 tools.add(connector1);
+tools.add(connector2);
 tools.add(emittor1);
 tools.add(receiver1);
+tools.add(door1);
+lasers.addintersectobjects(tools.children);
 tools.listenToPointerEvents(renderer, player1.camera);
 scene.add(tools);
+scene.add(dashes);
+scene.add(lasers);
 
 
 var fixedTimeStep = 1.0 / 60.0; // seconds
@@ -184,15 +197,26 @@ var maxSubSteps = 3;
 
 
 function animate() {
-	player1_Control.update();
-	player1.sync();
 	// requestAnimationFrame(animate);
 	const delta = clock.getDelta();
 	world.step(fixedTimeStep, delta, maxSubSteps);
-
+	player1_Control.update();
+	player1.sync();
 	sphere.sync();
 	box.sync();
 	ground.sync();
+	cube1.sync();
+	cube2.sync();
+	connector1.sync();
+	connector2.sync();
+	emittor1.sync();
+	receiver1.sync();
+	door1.sync();
+	dashes.update();
+	lasers.update();
+	for(var mixer of mixers){
+		mixer.update(delta)
+	}
 	// firstPersonControl.update(delta);
 	renderer.render( scene, player1.camera );
 }

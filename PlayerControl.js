@@ -96,23 +96,23 @@ export class PlayerControl {
         direction_left.cross(direction_front);
         const speed = 0.1;
         // ugly movement
-        if (this.key_state['ArrowUp'] || this.key_state['w']) this.player.move(direction_front.multiplyScalar(speed));
-        if (this.key_state['ArrowDown'] || this.key_state['s']) this.player.move(zerovec.sub(direction_front).multiplyScalar(speed));
-        if (this.key_state['ArrowLeft'] || this.key_state['a']) this.player.move(direction_left.multiplyScalar(speed));
-        if (this.key_state['ArrowRight'] || this.key_state['d']) this.player.move(zerovec.sub(direction_left).multiplyScalar(speed));
+        // if (this.key_state['ArrowUp'] || this.key_state['w']) this.player.move(direction_front.multiplyScalar(speed));
+        // if (this.key_state['ArrowDown'] || this.key_state['s']) this.player.move(zerovec.sub(direction_front).multiplyScalar(speed));
+        // if (this.key_state['ArrowLeft'] || this.key_state['a']) this.player.move(direction_left.multiplyScalar(speed));
+        // if (this.key_state['ArrowRight'] || this.key_state['d']) this.player.move(zerovec.sub(direction_left).multiplyScalar(speed));
         // beautiful movement
-        // var v = new THREE.Vector3(0, 0, 0);
-        // // console.log(v);
-        // if (this.key_state['ArrowUp'] || this.key_state['w']) v.add(direction_front);
-        // if (this.key_state['ArrowDown'] || this.key_state['s']) v.sub(direction_front);
-        // if (this.key_state['ArrowLeft'] || this.key_state['a']) v.add(direction_left);
-        // if (this.key_state['ArrowRight'] || this.key_state['d']) v.sub(direction_left);
-        // v.normalize();
-        // v.multiplyScalar(10);
-        // v.z = this.player.velocity.z;
-        // if (this.key_up[' ']) v.add(direction_up.clone().multiplyScalar(50));
-        // // console.log(v);
-        // this.player.set_velocity(v);
+        var v = new THREE.Vector3(0, 0, 0);
+        // console.log(v);
+        if (this.key_state['ArrowUp'] || this.key_state['w']) v.add(direction_front);
+        if (this.key_state['ArrowDown'] || this.key_state['s']) v.sub(direction_front);
+        if (this.key_state['ArrowLeft'] || this.key_state['a']) v.add(direction_left);
+        if (this.key_state['ArrowRight'] || this.key_state['d']) v.sub(direction_left);
+        v.normalize();
+        v.multiplyScalar(10);
+        v.z = this.player.velocity.z;
+        if (this.key_up[' ']) v.add(direction_up.clone().multiplyScalar(50));
+        // console.log(v);
+        this.player.set_velocity(v);
 
         this.player.rotate(-this.mouse_deltaX * 0.005, -this.mouse_deltaY * 0.005)
 
