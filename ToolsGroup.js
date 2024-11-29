@@ -14,7 +14,7 @@ class ToolsGroup extends Group {
     constructor() {
         super();
         this._attached = [];
-        console.log(this._attached.length);
+        // console.log(this._attached.length);
         this.currentObject = null;
     }
 
@@ -64,6 +64,16 @@ class ToolsGroup extends Group {
                     console.log(object.parent);
                     _event.type = 'pick';
 
+                    _event.data.set( uv.x, 1 - uv.y );
+                    object.dispatchEvent(_event);
+                }
+            }
+            if(intersects.length>0 && intersects[0].object.click.includes('win')){
+                console.log('reach goal')
+                if(scope._attached.length === 0 ){
+                    const object = intersects[0].object;
+                    const uv = intersects[0].uv;
+                    _event.type = 'reach';
                     _event.data.set( uv.x, 1 - uv.y );
                     object.dispatchEvent(_event);
                 }

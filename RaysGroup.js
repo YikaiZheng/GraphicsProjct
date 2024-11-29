@@ -68,7 +68,7 @@ export class LaserBeam extends THREE.Mesh{
 		this.add(mesh)
 	}
     var color_sprite = '';
-    if(color===0xff0000){
+    if(color===0xff3333){
         color_sprite = 'red'
     }
     else if(color===0x3333ff){

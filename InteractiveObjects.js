@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import particleFire from './fire/three-particle-fire'
+
+particleFire.install( { THREE: THREE } );
 
 const _event = {type:''}
 
@@ -206,8 +209,8 @@ function onConnect( event ) {
 
 export class cube extends THREE.Mesh {
     constructor(id){
-        const cubeSize = 0.6
-        const cubeGeo = new THREE.BoxGeometry(cubeSize, 3*cubeSize, cubeSize)
+        const cubeSize = 0.8
+        const cubeGeo = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)
         const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' })
         super(cubeGeo,cubeMat);
         this.idendity = id;
@@ -373,6 +376,7 @@ function onReceiverActivate(event){
         if(this._sourcelist.length === 0){
             _event.type = 'activate'
             this.targetobject.dispatchEvent(_event);
+            console.log('receiver activated')
         }
         this._sourcelist.push(event.sourceobject);
     }
@@ -408,8 +412,8 @@ export class door extends THREE.Mesh {
         this.name = 'door';
         this.click = ['none'];
         this.use = 'none';
-        this.openAction = null;
-        this.closeaction = null;
+        this._openAction = null;
+        this._closeAction = null;
     }
     setAnimation(mixer){
         const times = [0,1];
@@ -430,22 +434,100 @@ export class door extends THREE.Mesh {
         const closescaleKF = new THREE.KeyframeTrack('door.scale',times,[0,1,1,1,1,1]);
         const open = new THREE.AnimationClip("open", 1, [openposKF, openscaleKF]);
         const close = new THREE.AnimationClip("close", 1, [closeposKF, closescaleKF]);
-        this.openAction = mixer.clipAction(open);
-        this.closeAction = mixer.clipAction(close);
-        this.openAction.clampWhenFinished = true;
-        this.openAction.loop = THREE.LoopOnce;
-        this.closeAction.clampWhenFinished = true;
-        this.closeAction.loop = THREE.LoopOnce;
+        this._openAction = mixer.clipAction(open);
+        this._closeAction = mixer.clipAction(close);
+        this._openAction.clampWhenFinished = true;
+        this._openAction.loop = THREE.LoopOnce;
+        this._closeAction.clampWhenFinished = true;
+        this._closeAction.loop = THREE.LoopOnce;
     }
 }
 
 function onActivate(event){
-    this.closeAction.stop();
-    this.openAction.play();
+    this._closeAction.stop();
+    this._openAction.play();
 }
 
 function onDeactivate(event){
-    this.closeAction.clampWhenFinished = true;
-    this.openAction.stop();
-    this.closeAction.play();
+    this._openAction.stop();
+    this._closeAction.play();
+}
+
+export class goal extends THREE.Mesh {
+    constructor(id,loader){
+        const geometry = new THREE.CylinderGeometry(0.25,0.25,0.2);
+        const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+        super(geometry,Mat);
+        const layer = new THREE.Layers();
+        layer.set(1);
+        this.layers = layer;
+        const url = '/switch.glb';
+        loader.load(url, (gltf) => {
+            const root = gltf.scene;
+            this.add(root);
+            const layer = new THREE.Layers();
+            layer.set(2);
+            for(var child of root.children){
+                child.layers = layer;
+            }
+            console.log(root);
+            this.switch = root.children[1];
+        })
+        this.identity = id;
+        this.addEventListener('reach',onReach);
+        this.click = ['win'];
+        this.use = 'none';
+        this.Action = null;
+        this._update = false;
+    }
+
+    async setAnimation(){
+        while(!this.switch){
+            await sleep(1);
+        }
+        const mixer = new THREE.AnimationMixer(this.switch);
+        const times = [0,2,4];
+        const initpos = this.switch.position;
+        this.switch.name='switch';
+        const pos = [initpos.x,initpos.y,initpos.z,initpos.x,initpos.y-0.05,initpos.z,initpos.x,initpos.y-0.05,initpos.z];
+        const yAxis = new THREE.Vector3(0,1,0)
+        const qInitial = new THREE.Quaternion().setFromAxisAngle(yAxis,Math.PI/3);
+        const qFinal = new THREE.Quaternion().setFromAxisAngle(yAxis,0);
+        const rot = [qInitial.x,qInitial.y,qInitial.z,qInitial.w,
+                    qInitial.x,qInitial.y,qInitial.z,qInitial.w,
+                    qFinal.x,qFinal.y,qFinal.z,qFinal.w]
+        const posKF = new THREE.KeyframeTrack('switch.position', times, pos);
+        const rotKF = new THREE.KeyframeTrack('switch.quaternion', times, rot);
+        const clip = new THREE.AnimationClip("clip", 4, [posKF,rotKF]);
+        this.Action = mixer.clipAction(clip);
+        this.Action.clampWhenFinished = true;
+        this.Action.loop = THREE.LoopOnce;
+        console.log('animation ready')
+        return mixer;
+    }
+    update(delta){
+        if(this._update){
+            this.children[1].material.update( delta )
+        }
+    }
+}
+
+function sleep (time) {
+    return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+async function onReach(event){
+    console.log(this.Action)
+    this.Action.play();
+    await sleep(4000);
+    var fireRadius = 0.03;
+    var fireHeight = 0.6;
+    var particleCount = 400;
+    var geometry0 = new particleFire.Geometry( fireRadius, fireHeight, particleCount );
+    var material0 = new particleFire.Material( { color: 0xff2200 } );
+    material0.setPerspective( 75, window.innerHeight);
+    var particleFireMesh0 = new THREE.Points( geometry0, material0 );
+    particleFireMesh0.position.set(0,0.1,0);
+    this.add( particleFireMesh0 );
+    this._update = true;
 }

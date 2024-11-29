@@ -4,7 +4,7 @@ import WebGL from 'three/addons/capabilities/WebGL.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CameraControls } from './CameraControl';
 import { ToolsGroup } from './ToolsGroup';
-import { cube, connector, emittor, receiver, door } from './InteractiveObjects'
+import { cube, connector, emittor, receiver, door, goal } from './InteractiveObjects'
 import {Dash, DashesGroup, RaysGroup} from './RaysGroup'
 
 
@@ -113,6 +113,10 @@ quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
 emittor1.quaternion.set(quaternion.x,quaternion.y,quaternion.z,quaternion.w);
 const receiver1 = new receiver(4,0x3333ff,gltfLoader,door1);
 receiver1.position.set(2,1,0);
+const goal0 = new goal(5,gltfLoader);
+goal0.position.set(3,1,-5);
+goal0.setAnimation().then((mixer)=>{const goalmixer = mixer; mixers.push(goalmixer);});
+
 
 tools.add(cube1);
 tools.add(cube2);
@@ -121,6 +125,7 @@ tools.add(connector2);
 tools.add(emittor1);
 tools.add(receiver1);
 tools.add(door1);
+tools.add(goal0);
 lasers.addintersectobjects(tools.children);
 tools.listenToPointerEvents(renderer,camera);
 scene.add(tools);
@@ -133,8 +138,10 @@ function animate() {
 	firstPersonControl.update(delta);
 	dashes.update();
 	lasers.update();
+	goal0.update(delta);
 	for(var mixer of mixers){
-		mixer.update(delta)
+		mixer.update(delta);
+
 	}
 	renderer.render( scene, camera );
 }
@@ -148,5 +155,4 @@ if ( WebGL.isWebGL2Available() ) {
 
 	const warning = WebGL.getWebGL2ErrorMessage();
 	document.getElementById( 'container' ).appendChild( warning );
-
 }
