@@ -55,6 +55,7 @@ class ToolsGroup extends Group {
                     const object = scope._attached[0];
                     console.log(object.parent);
                     camera.remove( object );
+                    // scope.player.remove_obj(object);
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
                     scope.attach(object);
                     console.log(object.parent);
@@ -72,6 +73,7 @@ class ToolsGroup extends Group {
                     scope.remove( object );
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
                     camera.attach(object);
+                    // scope.player.add_obj(object);
                     console.log(object.parent);
                     _event.type = 'pick';
 
