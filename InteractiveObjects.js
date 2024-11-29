@@ -1,12 +1,14 @@
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import particleFire from './fire/three-particle-fire'
+import { PhysicsObject, PlayerObject } from './PhysicsObjects'
 
 particleFire.install( { THREE: THREE } );
 
 const _event = {type:''}
 
-export class connector extends THREE.Mesh {
+export class connector extends PhysicsObject {
     constructor(loader,dashgroup,lasergroup){
         const geometry = new THREE.CylinderGeometry(0.2,0.5,1.5);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
@@ -212,10 +214,16 @@ function onConnect( event ) {
 
 export class cube extends THREE.Mesh {
     constructor(){
-        const cubeSize = 0.8
+        const cubeSize = { x: 0.8, y: 0.8, z: 0.8 };
         const cubeGeo = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)
         const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' })
-        super(cubeGeo,cubeMat);
+        // const cube_Shape = new CANNON.Box(new CANNON.Vec3(cubeSize.x / 2, cubeSize.y / 2, cubeSize.z / 2));
+        // const cube_Body = new CANNON.Body({
+        //     shape: cube_Shape,
+        //     mass: 0,
+        // })
+        // super(cubeGeo, cubeMat, cube_Body);
+        super(cubeGeo, cubeMat);
         this.idendity = 0;
         this.click = ['pick'];
         this.use = 'none';
@@ -412,13 +420,28 @@ function onReceiverBreak(event){
 
 
 export class door extends THREE.Mesh {
-    constructor(position,orientation){
-        const geometry = new THREE.BoxGeometry(3,2,0.05);
+    constructor(position,orientation,world){
+        const doorsize = {x:3, y:2, z:0.05};
+        const geometry = new THREE.BoxGeometry(doorsize.x,doorsize.y,doorsize.z);
         const material = new THREE.MeshPhongMaterial({  color: '#800080',emissive: '#800080',specular: '#cd00cd',shininess: 10,transparent: true,opacity: 0.6});
         super(geometry,material);
+        const Shape = new CANNON.Box(new CANNON.Vec3(doorsize.x / 2, doorsize.y / 2, doorsize.z / 2));
+        this.body = new CANNON.Body({
+            shape: Shape,
+            mass: 0,
+        })
+        this.world = world;
         this.identity = 0;
         this.position.set(position.x,position.y,position.z);
         this.orientation = orientation;
+        if(orientation == 'z') {
+            const angle = Math.PI / 2; // 45 degrees in radians
+            const axis = new CANNON.Vec3(0, 1, 0); // Y-axis
+            this.body.quaternion.setFromAxisAngle(axis, angle);
+        }
+        this.body.position.copy(this.position);
+        // this.quaternion.copy(this.body.quaternion);
+        this.world.addBody(this.body);
         this.addEventListener('activate',onActivate);
         this.addEventListener('deactivate',onDeactivate);
         this.name = 'door';
@@ -461,11 +484,13 @@ export class door extends THREE.Mesh {
 function onActivate(event){
     this._closeAction.stop();
     this._openAction.play();
+    this.world.removeBody(this.body);
 }
 
 function onDeactivate(event){
     this._openAction.stop();
     this._closeAction.play();
+    this.world.addBody(this.body);
 }
 
 export class goal extends THREE.Mesh {

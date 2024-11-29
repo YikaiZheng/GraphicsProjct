@@ -20,6 +20,19 @@ const clock = new THREE.Clock();
 console.log(window.innerWidth)
 console.log(window.innerHeight)
 
+const boxSize = { x: 1, y: 1, z: 1 };
+const box_Shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
+const box_Body = new CANNON.Body({
+	shape: box_Shape,
+	mass: 1,
+})
+// console.log(box_Body.index);
+box_Body.position.set(0, 2, 0); // Set the position
+const box_Geometry = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
+const box_Material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+const box = new PhysicsObject(box_Geometry, box_Material, box_Body)
+box.addTo(world, scene);
+
 const boundary_1 = new Boundary_1(world, scene);
 
 const starting_position = new THREE.Vector3(-4, 1.5, 0);
@@ -99,15 +112,15 @@ cube1.position.set(2,0.4,-6);
 const goal0 = new goal(gltfLoader);
 goal0.position.set(9,1,-0.5);
 goal0.setAnimation().then((mixer)=>{const goalmixer = mixer; mixers.push(goalmixer);});
-const door1 = new door(new THREE.Vector3(5,1,-0.5),'z');
+const door1 = new door(new THREE.Vector3(5,1,-0.5),'z',world);
 const mixer1 = new THREE.AnimationMixer(door1);
 door1.setAnimation(mixer1);
 mixers.push(mixer1);
-const door2 = new door(new THREE.Vector3(7,1,-0.5),'z');
+const door2 = new door(new THREE.Vector3(7,1,-0.5),'z',world);
 const mixer2 = new THREE.AnimationMixer(door2);
 door2.setAnimation(mixer2);
 mixers.push(mixer2);
-const door3 = new door(new THREE.Vector3(-0.5,1,-5),'x');
+const door3 = new door(new THREE.Vector3(-0.5,1,-5),'x',world);
 const mixer3 = new THREE.AnimationMixer(door3);
 door3.setAnimation(mixer3);
 mixers.push(mixer3);
@@ -155,6 +168,7 @@ function animate() {
 	// firstPersonControl.update(delta);
 	player1_Control.update();
 	player1.sync();
+	box.sync();
 	boundary_1.sync();
 	dashes.update();
 	lasers.update();
