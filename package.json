@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "cannon": "^0.6.2",
     "cannon-es": "^0.20.0",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "three-nebula": "^10.0.3"
   },
   "devDependencies": {
-    "vite": "^5.4.11"
+    "vite": "^5.4.10"
   }
 }

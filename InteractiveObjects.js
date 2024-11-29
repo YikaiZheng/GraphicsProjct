@@ -1,27 +1,16 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
-import { PhysicsObject } from './PhysicsObjects'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import particleFire from './fire/three-particle-fire'
+
+particleFire.install( { THREE: THREE } );
 
 const _event = {type:''}
 
-// class MeshwithId extends THREE.Mesh {
-//     constructor(geometry, material, id) {
-//         super(geometry, material);
-//         this.identity = id;
-//     }
-// }
-
-export class connector extends PhysicsObject {
+export class connector extends THREE.Mesh {
     constructor(loader,dashgroup,lasergroup){
-        const geometry = new THREE.CylinderGeometry(0.2, 0.5, 1.5);
+        const geometry = new THREE.CylinderGeometry(0.2,0.5,1.5);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        const shape = new CANNON.Cylinder(0.2, 0.5, 1.5);
-        const body = new CANNON.Body({
-            shape: shape,
-            mass: 1,
-        });
-        super(geometry, Mat, body);
+        super(geometry,Mat);
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
@@ -55,7 +44,6 @@ export class connector extends PhysicsObject {
         this.addEventListener('receive',onReceive);
         this.addEventListener('break',onBreak);
     }
-
     setId(id) {
         this.identity = id;
     }
@@ -91,8 +79,8 @@ function computeColor( sourcelist ){        //This function should be called eac
 
 function onPickTool( event ) {
     this._attached = true;
-    this.body.position.set(0.5,-0.9,-1);
-    this.body.quaternion.set(0,0,0,1);
+    this.position.set(0.5,-0.9,-1);
+    this.quaternion.set(0,0,0,1);
     this._source = [];
     this._color = 0x000000;
     this.children[0].children[0].material.emissive = new THREE.Color(0xbbbbbb);
@@ -104,8 +92,8 @@ function onPickTool( event ) {
 
 function onPlaceTool( event ) {
     this._attached = false;
-    this.body.quaternion.set(0,0,0,1);
-    this.body.position.y = 0.75;
+    this.quaternion.set(0,0,0,1);
+    this.position.y = 0.75;
     this.updateMatrixWorld();
     this.dashgroup.clear();
     for(var object of this._connected){
@@ -222,18 +210,13 @@ function onConnect( event ) {
     console.log(this._connected)
 }
 
-export class cube extends PhysicsObject {
+export class cube extends THREE.Mesh {
     constructor(){
-        const boxSize = { x: 0.6, y: 1.8, z: 0.6 };
-        const cubeGeo = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
-        const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' });
-        const cubeShape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
-        const cubeBody = new CANNON.Body({
-            shape: cubeShape,
-            mass: 1,
-        })
-        super(cubeGeo, cubeMat, cubeBody);
-        this.identity = 0;
+        const cubeSize = 0.8
+        const cubeGeo = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)
+        const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' })
+        super(cubeGeo,cubeMat);
+        this.idendity = 0;
         this.click = ['pick'];
         this.use = 'none';
         this.addEventListener('pick',onPick);
@@ -242,7 +225,6 @@ export class cube extends PhysicsObject {
         this.addEventListener('mouseout',onMouseout);
         this._attached = false;
     }
-
     setId(id) {
         this.identity = id;
     }
@@ -251,20 +233,19 @@ export class cube extends PhysicsObject {
 function onPick( event ) {
     console.log('pick');
     console.log(this.position);
-    this.body.position.set(0,1,-2);
-    this.body.quaternion.set(0,0,0,1);
-    // console.log(this.body.position);
+    this.position.set(0,-0.9,-1);
+    this.quaternion.set(0,0,0,1);
+    console.log(this.position);
     this._attached = true;
 }
 function onPlace( event ) {
-    // console.log(this.body.position);
-    this.body.quaternion.set(0,0,0,1);
-    this.body.position.y=0.9;
+    console.log(this.position);
+    this.quaternion.set(0,0,0,1);
+    this.position.y=0.3;
     this._attached = false;
 }
 function onHover( event ) {
     const color3 = new THREE.Color(0x444444);
-    // console.log(this);
     this.material.emissive = color3;
     this.material.needsUpdate = true;
 }
@@ -274,16 +255,11 @@ function onMouseout( event ) {
     this.material.needsUpdate = true;
 }
 
-export class emittor extends PhysicsObject {
+export class emittor extends THREE.Mesh {
     constructor(color,loader){
-        const geometry = new THREE.CylinderGeometry(0.15, 0.3, 0.15);
+        const geometry = new THREE.CylinderGeometry(0.15,0.3,0.15);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        const shape = new CANNON.Cylinder(0.15, 0.3, 0.15);
-        const body = new CANNON.Body({
-            shape: shape,
-            mass: 1,
-        });
-        super(geometry, Mat, body);
+        super(geometry,Mat);
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
@@ -338,16 +314,11 @@ function onMouseoutEmittor( event ) {
     }
 }
 
-export class receiver extends PhysicsObject {
+export class receiver extends THREE.Mesh{
     constructor(color,loader,targetobject){
         const geometry = new THREE.CylinderGeometry(0.3,0.3,0.1);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        const shape = new CANNON.Cylinder(0.3, 0.3, 0.1);
-        const body = new CANNON.Body({
-            shape: shape,
-            mass: 1,
-        });
-        super(geometry, Mat, body);
+        super(geometry,Mat);
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
@@ -417,6 +388,7 @@ function onReceiverActivate(event){
         if(this._sourcelist.length === 0){
             _event.type = 'activate'
             this.targetobject.dispatchEvent(_event);
+            console.log('receiver activated')
         }
         this._sourcelist.push(event.sourceobject);
     }
@@ -439,27 +411,21 @@ function onReceiverBreak(event){
 }
 
 
-export class door extends PhysicsObject {
+export class door extends THREE.Mesh {
     constructor(position,orientation){
-        const boxSize = { x: 3, y: 2, z: 0.25 };
-        const geometry = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
+        const geometry = new THREE.BoxGeometry(3,2,0.05);
         const material = new THREE.MeshPhongMaterial({  color: '#800080',emissive: '#800080',specular: '#cd00cd',shininess: 10,transparent: true,opacity: 0.6});
-        const shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
-        const body = new CANNON.Body({
-            shape: shape,
-            mass: 0,
-        });
-        super(geometry, material, body);
+        super(geometry,material);
         this.identity = 0;
-        this.body.position.set(position.x,position.y,position.z);
+        this.position.set(position.x,position.y,position.z);
         this.orientation = orientation;
         this.addEventListener('activate',onActivate);
         this.addEventListener('deactivate',onDeactivate);
         this.name = 'door';
         this.click = ['none'];
         this.use = 'none';
-        this.openAction = null;
-        this.closeaction = null;
+        this._openAction = null;
+        this._closeAction = null;
     }
     setId(id) {
         this.identity = id;
@@ -483,22 +449,103 @@ export class door extends PhysicsObject {
         const closescaleKF = new THREE.KeyframeTrack('door.scale',times,[0,1,1,1,1,1]);
         const open = new THREE.AnimationClip("open", 1, [openposKF, openscaleKF]);
         const close = new THREE.AnimationClip("close", 1, [closeposKF, closescaleKF]);
-        this.openAction = mixer.clipAction(open);
-        this.closeAction = mixer.clipAction(close);
-        this.openAction.clampWhenFinished = true;
-        this.openAction.loop = THREE.LoopOnce;
-        this.closeAction.clampWhenFinished = true;
-        this.closeAction.loop = THREE.LoopOnce;
+        this._openAction = mixer.clipAction(open);
+        this._closeAction = mixer.clipAction(close);
+        this._openAction.clampWhenFinished = true;
+        this._openAction.loop = THREE.LoopOnce;
+        this._closeAction.clampWhenFinished = true;
+        this._closeAction.loop = THREE.LoopOnce;
     }
 }
 
 function onActivate(event){
-    this.closeAction.stop();
-    this.openAction.play();
+    this._closeAction.stop();
+    this._openAction.play();
 }
 
 function onDeactivate(event){
-    this.closeAction.clampWhenFinished = true;
-    this.openAction.stop();
-    this.closeAction.play();
+    this._openAction.stop();
+    this._closeAction.play();
+}
+
+export class goal extends THREE.Mesh {
+    constructor(loader){
+        const geometry = new THREE.CylinderGeometry(0.25,0.25,0.2);
+        const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+        super(geometry,Mat);
+        const layer = new THREE.Layers();
+        layer.set(1);
+        this.layers = layer;
+        const url = '/switch.glb';
+        loader.load(url, (gltf) => {
+            const root = gltf.scene;
+            this.add(root);
+            const layer = new THREE.Layers();
+            layer.set(2);
+            for(var child of root.children){
+                child.layers = layer;
+            }
+            console.log(root);
+            this.switch = root.children[1];
+        })
+        this.identity = 0;
+        this.addEventListener('reach',onReach);
+        this.click = ['win'];
+        this.use = 'none';
+        this.Action = null;
+        this._update = false;
+    }
+    setId(id) {
+        this.identity = id;
+    }
+
+    async setAnimation(){
+        while(!this.switch){
+            await sleep(1);
+        }
+        const mixer = new THREE.AnimationMixer(this.switch);
+        const times = [0,2,4];
+        const initpos = this.switch.position;
+        this.switch.name='switch';
+        const pos = [initpos.x,initpos.y,initpos.z,initpos.x,initpos.y-0.05,initpos.z,initpos.x,initpos.y-0.05,initpos.z];
+        const yAxis = new THREE.Vector3(0,1,0)
+        const qInitial = new THREE.Quaternion().setFromAxisAngle(yAxis,Math.PI/3);
+        const qFinal = new THREE.Quaternion().setFromAxisAngle(yAxis,0);
+        const rot = [qInitial.x,qInitial.y,qInitial.z,qInitial.w,
+                    qInitial.x,qInitial.y,qInitial.z,qInitial.w,
+                    qFinal.x,qFinal.y,qFinal.z,qFinal.w]
+        const posKF = new THREE.KeyframeTrack('switch.position', times, pos);
+        const rotKF = new THREE.KeyframeTrack('switch.quaternion', times, rot);
+        const clip = new THREE.AnimationClip("clip", 4, [posKF,rotKF]);
+        this.Action = mixer.clipAction(clip);
+        this.Action.clampWhenFinished = true;
+        this.Action.loop = THREE.LoopOnce;
+        console.log('animation ready')
+        return mixer;
+    }
+    update(delta){
+        if(this._update){
+            this.children[1].material.update( delta )
+        }
+    }
+}
+
+function sleep (time) {
+    return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+async function onReach(event){
+    console.log(this.Action)
+    this.Action.play();
+    await sleep(4000);
+    var fireRadius = 0.03;
+    var fireHeight = 0.6;
+    var particleCount = 400;
+    var geometry0 = new particleFire.Geometry( fireRadius, fireHeight, particleCount );
+    var material0 = new particleFire.Material( { color: 0xff2200 } );
+    material0.setPerspective( 75, window.innerHeight);
+    var particleFireMesh0 = new THREE.Points( geometry0, material0 );
+    particleFireMesh0.position.set(0,0.1,0);
+    this.add( particleFireMesh0 );
+    this._update = true;
 }
