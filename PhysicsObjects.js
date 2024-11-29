@@ -27,7 +27,7 @@ export class PhysicsObject extends THREE.Mesh {
 
 export class PlayerObject extends PhysicsObject {
     constructor(position) {
-        const boxSize = { x: 1, y: 2, z: 1 };
+        const boxSize = { x: 1, y: 1.7, z: 1 };
         const box_Shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
         const body_player = new CANNON.Body({
             shape: box_Shape,
@@ -39,7 +39,7 @@ export class PlayerObject extends PhysicsObject {
         
         super(mesh_Geo, mesh_Mat, body_player);
         
-        this.init_camera_offset = new THREE.Vector3(0, 2, -0.55);
+        this.init_camera_offset = new THREE.Vector3(0, 0.8, -0.55);
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
         this.camera.position.set(position.x, position.y, position.z);
         this.camera.position.add(this.init_camera_offset);

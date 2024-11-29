@@ -91,6 +91,7 @@ export class PlayerControl {
     update() {
         const zerovec = new THREE.Vector3(0, 0, 0);
         const direction_front = this.player.facing_direction.clone();
+        // console.log(direction_front);
         const direction_up = new THREE.Vector3(0, 1, 0);
         const direction_left = new THREE.Vector3(0, 1, 0);
         direction_left.cross(direction_front);
@@ -102,17 +103,19 @@ export class PlayerControl {
         // if (this.key_state['ArrowRight'] || this.key_state['d']) this.player.move(zerovec.sub(direction_left).multiplyScalar(speed));
         // beautiful movement
         var v = new THREE.Vector3(0, 0, 0);
-        // console.log(v);
         if (this.key_state['ArrowUp'] || this.key_state['w']) v.add(direction_front);
         if (this.key_state['ArrowDown'] || this.key_state['s']) v.sub(direction_front);
         if (this.key_state['ArrowLeft'] || this.key_state['a']) v.add(direction_left);
         if (this.key_state['ArrowRight'] || this.key_state['d']) v.sub(direction_left);
         v.normalize();
-        v.multiplyScalar(10);
-        v.z = this.player.velocity.z;
-        if (this.key_up[' ']) v.add(direction_up.clone().multiplyScalar(50));
+        v.multiplyScalar(5);
+        // v.y = this.player.velocity.y;
+        if (this.key_down[' ']) {  // and player on ground
+            this.player.body.velocity.y += 5;
+        }
         // console.log(v);
-        this.player.set_velocity(v);
+        this.player.body.velocity.x = v.x;
+        this.player.body.velocity.z = v.z;
 
         this.player.rotate(-this.mouse_deltaX * 0.005, -this.mouse_deltaY * 0.005)
 

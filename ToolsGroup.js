@@ -7,7 +7,7 @@ import {
     StaticCopyUsage
 } from 'three';
 
-const _pointer = new Vector2(0, 0);
+const _pointer = new Vector2();
 const _event = { type: '', data: _pointer, targetobject: null};
 
 class ToolsGroup extends Group {
@@ -54,8 +54,7 @@ class ToolsGroup extends Group {
                     _event.type = 'place';
                     const object = scope._attached[0];
                     console.log(object.parent);
-                    scope.scene.remove( object );
-                    scope.player.remove_obj(object);
+                    camera.remove( object );
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
                     scope.attach(object);
                     console.log(object.parent);
@@ -72,11 +71,20 @@ class ToolsGroup extends Group {
                     console.log(object.parent);
                     scope.remove( object );
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
-                    console.log(this.scene);
-                    scope.scene.add(object);
-                    scope.player.add_obj(object, new Vector3(0, 2, -5));
+                    camera.attach(object);
+                    console.log(object.parent);
                     _event.type = 'pick';
 
+                    _event.data.set( uv.x, 1 - uv.y );
+                    object.dispatchEvent(_event);
+                }
+            }
+            if(intersects.length>0 && intersects[0].object.click.includes('win')){
+                console.log('reach goal')
+                if(scope._attached.length === 0 ){
+                    const object = intersects[0].object;
+                    const uv = intersects[0].uv;
+                    _event.type = 'reach';
                     _event.data.set( uv.x, 1 - uv.y );
                     object.dispatchEvent(_event);
                 }
@@ -95,15 +103,12 @@ class ToolsGroup extends Group {
                             intersects[0].object.dispatchEvent(_event);
                         }
                     }
-                    connectobject.dispatchEvent(_event);
                 }
             }
-            console.log(_event.type);
         }
 
 		function onPointerEvent( event ) {
 
-            console.log("MOUSE MOVING");
 			event.stopPropagation();
 
 			const rect = renderer.domElement.getBoundingClientRect();
@@ -150,14 +155,13 @@ class ToolsGroup extends Group {
                     scope.currentObject = object;
                 }
             }
-            console.log(_event.type);
 		}
 
-		// element.addEventListener( 'pointerdown', onPointerEvent );
-		// element.addEventListener( 'pointerup', onPointerEvent );
-		// element.addEventListener( 'pointermove', onPointerEvent );
-		// element.addEventListener( 'mousedown', onPointerEvent );
-		// element.addEventListener( 'mouseup', onPointerEvent );
+		// document.addEventListener( 'pointerdown', onPointerEvent );
+		// document.addEventListener( 'pointerup', onPointerEvent );
+		// document.addEventListener( 'pointermove', onPointerEvent );
+		// document.addEventListener( 'mousedown', onPointerEvent );
+		// document.addEventListener( 'mouseup', onPointerEvent );
 		document.addEventListener( 'mousemove', onPointerEvent );
 		document.addEventListener( 'click', onClickEvent );
 
