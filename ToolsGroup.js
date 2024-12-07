@@ -11,14 +11,14 @@ const _pointer = new Vector2();
 const _event = { type: '', data: _pointer, targetobject: null};
 
 class ToolsGroup extends Group {
-    constructor(player, scene) {
+    constructor(player, scene, world) {
         super();
-        this._attached = [];
-        console.log(this._attached.length);
+        // this._attached = [];
         this.currentObject = null;
         this.cnt = 0;
         this.player = player;
         this.scene = scene;
+        this.world = world;
         // console.log(this.scene);
     }
 
@@ -26,6 +26,26 @@ class ToolsGroup extends Group {
         super.add(object);
         object.setId(this.cnt);
         this.cnt += 1;
+    }
+
+    addToWorld() {
+        for(var i=0; i<this.children.length; i++) {
+            // console.log(i);
+            this.children[i].addToWorld(this.world);
+        }
+    }
+
+    addToScene() {
+        this.scene.add(this);
+    }
+
+    sync() {
+        for(var i=0; i<this.children.length; i++) {
+            this.children[i].sync();
+            // console.log("======================");
+            // console.log(this.children[i].position);
+            // console.log(this.children[i].body.position);
+        }
     }
 
     listenToPointerEvents( renderer, camera ) {
@@ -49,31 +69,35 @@ class ToolsGroup extends Group {
 			raycaster.setFromCamera( _pointer, camera );
 
 			const intersects = raycaster.intersectObjects( scope.children, false );
-            if(intersects.length === 0 || intersects[0].object.click.includes('none')){
-                if  (scope._attached.length>0){
-                    _event.type = 'place';
-                    const object = scope._attached[0];
-                    console.log(object.parent);
-                    camera.remove( object );
-                    // scope.player.remove_obj(object);
-                    object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
-                    scope.attach(object);
-                    console.log(object.parent);
-                    object.dispatchEvent(_event);
-                    scope._attached=[];
+            if  (scope.player.attached.length > 0){
+                if(intersects.length === 0 || intersects[0].object.click.includes('none') || 
+                    intersects[0].object.identity == scope.player.attached[0].identity) {
+                    if(scope.player.test_intersection(0) == false) {
+                        _event.type = 'place';
+                        const object = scope.player.attached[0];
+                        console.log(object.parent);
+                        // camera.remove( object );
+                        scope.player.remove_obj(object);
+                        object.addToWorld();
+                        object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
+                        // scope.attach(object);
+                        console.log(object.parent);
+                        object.dispatchEvent(_event);
+                    }
                 }
             }
-            if(intersects.length>0 && intersects[0].object.click.includes('pick')){
+            else if(intersects.length>0 && intersects[0].object.click.includes('pick')){
                 console.log('pick object')
-                if(scope._attached.length === 0 ){
+                if( scope.player.attached.length == 0){
                     const object = intersects[0].object;
                     const uv = intersects[0].uv;
-                    scope._attached.push(object);
+                    // scope._attached.push(object);
                     console.log(object.parent);
-                    scope.remove( object );
+                    // scope.remove( object );
                     object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
-                    camera.attach(object);
-                    // scope.player.add_obj(object);
+                    // camera.add( object );
+                    scope.player.add_obj(object);
+                    object.removeFromWorld();
                     console.log(object.parent);
                     _event.type = 'pick';
 
@@ -81,9 +105,9 @@ class ToolsGroup extends Group {
                     object.dispatchEvent(_event);
                 }
             }
-            if(intersects.length>0 && intersects[0].object.click.includes('win')){
+            else if(intersects.length>0 && intersects[0].object.click.includes('win')){
                 console.log('reach goal')
-                if(scope._attached.length === 0 ){
+                if( scope.player.attached.length == 0){
                     const object = intersects[0].object;
                     const uv = intersects[0].uv;
                     _event.type = 'reach';
@@ -91,9 +115,9 @@ class ToolsGroup extends Group {
                     object.dispatchEvent(_event);
                 }
             }
-            if(intersects.length>0 && intersects[0].object.click.includes('connect')){
-                if(scope._attached.length > 0 && scope._attached[0].use === 'connect'){
-                    const connectobject =  scope._attached[0];
+            else if(intersects.length>0 && intersects[0].object.click.includes('connect')){
+                if( scope.player.attached.length > 0 && scope.player.attached[0].use === 'connect'){
+                    const connectobject =  scope.player.attached[0];
                     if(intersects[0].object.identity!=connectobject.identity){
                         console.log(intersects[0].object);
                         _event.targetobject = intersects[0].object;
@@ -123,7 +147,7 @@ class ToolsGroup extends Group {
 
 			const intersects = raycaster.intersectObjects( scope.children, false );
 
-            if ( intersects.length === 0 || intersects[0].object.click.includes('none')) {
+            if ( intersects.length === 0 ||  scope.player.attached.length > 0 || intersects[0].object.click.includes('none')) {
                 if(scope.currentObject){
                     _event.type = 'mouseout';
                     scope.currentObject.dispatchEvent(_event);
@@ -131,13 +155,13 @@ class ToolsGroup extends Group {
                 }
             }
 
-			if ( intersects.length > 0 && intersects[0].object.click.includes('pick')) {
+			else if ( intersects.length > 0 && intersects[0].object.click.includes('pick')) {
 
 				const intersection = intersects[ 0 ];
 
 				const object = intersection.object;
 				const uv = intersection.uv;
-                if ((!scope.currentObject || scope.currentObject.identity != object.identity) && scope._attached.length === 0){
+                if ((!scope.currentObject || scope.currentObject.identity != object.identity) && scope.player.attached.length === 0){
                     _event.type = 'mouseover';
                     _event.data.set( uv.x, 1 - uv.y );
                     object.dispatchEvent( _event );
@@ -145,12 +169,13 @@ class ToolsGroup extends Group {
                     
                 }
 			}
-            if ( intersects.length > 0 && intersects[0].object.click.includes('connect')) {
+            else if ( intersects.length > 0 && intersects[0].object.click.includes('connect')) {
                 const intersection = intersects[ 0 ];
 
 				const object = intersection.object;
 				const uv = intersection.uv;
-                if ((!scope.currentObject || scope.currentObject.identity != object.identity) && scope._attached.length > 0 && scope._attached[0].use === 'connect'){
+                if ((!scope.currentObject || scope.currentObject.identity != object.identity) &&
+                     scope.player.attached.length > 0 && scope.player.attached[0].use === 'connect'){
                     _event.type = 'mouseover';
                     _event.data.set( uv.x, 1 - uv.y );
                     object.dispatchEvent( _event );
