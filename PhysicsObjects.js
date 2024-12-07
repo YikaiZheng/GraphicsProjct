@@ -3,9 +3,11 @@ import * as CANNON from 'cannon-es';
 
 
 export class PhysicsObject extends THREE.Mesh {
-    constructor(geometry, material, body) {
+    constructor(geometry, material, body, scene, world) {
         super(geometry, material)
         this.body = body;
+        this.world = world;
+        this.scene = scene;
         // this.position.copy(this.body.position);
         // this.quaternion.copy(this.body.quaternion);
     }
@@ -16,17 +18,38 @@ export class PhysicsObject extends THREE.Mesh {
         this.quaternion.copy(this.body.quaternion);
     }
 
-    // Add the physics body to the world and the mesh to the scene
-    addTo(world, scene) {
-        world.addBody(this.body); // Add to CANNON world
-        scene.add(this);     // Add to THREE scene
+    
+    addToWorld(world) {
+        this.world.addBody(this.body);
+    }
+    removeFromWorld(world) {
+        this.world.removeBody(this.body);
+    }
+    addToScene(Scene) {
+        this.scene.add(this);
+    }
+    removeFromScene(Scene) {
+        this.scene.remove(this);
     }
 
 }
 
+export class AnimatedPhysicsObject extends PhysicsObject {
+    constructor(geometry, material, body, scene, world) {
+        super(geometry, material, body, scene, world);
+    }
+    sync() {
+        this.body.position.copy(this.position);
+        this.body.quaternion.copy(this.quaternion);
+    }
+
+}
+
+  
 
 export class PlayerObject extends PhysicsObject {
-    constructor(position) {
+    constructor(position, scene, world) {
+
         const boxSize = { x: 1, y: 1.7, z: 1 };
         const box_Shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
         const body_player = new CANNON.Body({
@@ -37,7 +60,7 @@ export class PlayerObject extends PhysicsObject {
         const mesh_Geo = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
         const mesh_Mat = new THREE.MeshStandardMaterial({ color: 0x0000ff });
         
-        super(mesh_Geo, mesh_Mat, body_player);
+        super(mesh_Geo, mesh_Mat, body_player, scene, world);
         
         this.init_camera_offset = new THREE.Vector3(0, 0.8, -0.55);
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -56,22 +79,63 @@ export class PlayerObject extends PhysicsObject {
         
         this.velocity = new THREE.Vector3(0, 0, 0);
 
-
         this.attached = [];
         this.attached_offset = [];
+        this.attached_abletoPlace = [];
         // this.position.copy(this.body.position);
         // this.quaternion.copy(this.body.quaternion);
     }
 
-    add_obj(object, offset) {
+    add_obj(object) {
         this.attached.push(object);
-        this.attached_offset.push(offset);
+        // const facing_direction = this.facing_direction.clone();
+        // facing_direction.multiplyScalar(3);
+        // this.attached_offset.push(facing_direction);
+        this.attached_offset.push(new THREE.Vector3(0, 0, -3));
+        this.attached_abletoPlace.push(true);
     }
 
     remove_obj(object) {
         var idx = this.attached.indexOf(object);
         this.attached.splice(idx, 1);
         this.attached_offset.splice(idx, 1);
+        this.attached_abletoPlace.splice(idx, 1);
+    }
+
+    
+    test_intersection(idx) {
+        const targetBody = this.attached[idx].body;
+        console.log(targetBody);
+        // Compute the bounding box of the target body
+        const targetAABB = new CANNON.AABB();
+        targetBody.shapes[0].calculateWorldAABB(
+            targetBody.position,
+            targetBody.quaternion,
+            targetAABB.lowerBound,
+            targetAABB.upperBound
+        );
+    
+        // Iterate through all other bodies in the world
+        for (const otherBody of this.world.bodies) {
+        if (targetBody !== otherBody) {
+            // Compute the bounding box of the other body
+            const otherAABB = new CANNON.AABB();
+            otherBody.shapes[0].calculateWorldAABB(
+            otherBody.position,
+            otherBody.quaternion,
+            otherAABB.lowerBound,
+            otherAABB.upperBound
+            );
+    
+            // Check if the AABBs intersect
+            if (targetAABB.overlaps(otherAABB)) {
+            console.log("Intersection detected with body:", otherBody);
+            return true; // Exit early if any intersection is found
+            }
+        }
+        }
+    
+        return false; // No intersections found
     }
 
     set_velocity(v) {
@@ -133,9 +197,8 @@ export class PlayerObject extends PhysicsObject {
         super.sync();
     }
 
-    addTo(world, scene) {
-        scene.add(this.camera); 
-        scene.add(this);
-        world.addBody(this.body);
+    addToScene() {
+        super.addToScene();
+        this.scene.add(this);
     }
 }

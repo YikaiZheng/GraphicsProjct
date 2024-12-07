@@ -4,7 +4,8 @@ import { PhysicsObject } from './PhysicsObjects'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class PlayerControl {
-    constructor(player) {
+    constructor(player, world) {
+        this.world = world;
         this.player = player;
         // Track Keyboard Input
         this.key_state = {}; // Object to store key states
@@ -17,14 +18,18 @@ export class PlayerControl {
         this.mouse_deltaY = 0;
 
         document.addEventListener('keydown', (event) => {
-            this.key_state[event.key] = true; // Mark key as pressed
-            this.key_down[event.key] = true; // Mark key as pressed
-            console.log(`Key pressed: ${event.key}`);
+            if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
+                this.key_state[event.key] = true; // Mark key as pressed
+                this.key_down[event.key] = true; // Mark key as pressed
+                console.log(`Key pressed: ${event.key}`);
+            }
         });
         document.addEventListener('keyup', (event) => {
-            this.key_state[event.key] = false; // Mark key as released
-            this.key_up[event.key] = true; // Mark key as released
-            console.log(`Key released: ${event.key}`);
+            if(this.key_state[event.key] == true) {
+                this.key_state[event.key] = false; // Mark key as released
+                this.key_up[event.key] = true; // Mark key as released
+                console.log(`Key released: ${event.key}`);
+            }
         });
 
         // Element to enable pointer lock (e.g., the entire document body)

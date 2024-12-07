@@ -2,17 +2,26 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import particleFire from './fire/three-particle-fire'
-import { PhysicsObject, PlayerObject } from './PhysicsObjects'
+import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects'
 
 particleFire.install( { THREE: THREE } );
 
 const _event = {type:''}
 
 export class connector extends PhysicsObject {
-    constructor(loader,dashgroup,lasergroup){
-        const geometry = new THREE.CylinderGeometry(0.2,0.5,1.5);
+    constructor(loader, dashgroup, lasergroup, scene, world, position, quaternion){
+        const size = {t:0.2, b:0.5, h:1.5};
+        const geometry = new THREE.CylinderGeometry(size.t, size.b, size.h);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        super(geometry,Mat);
+        const cylinderShape = new CANNON.Cylinder(size.t, size.b, size.h);
+        const cylinderBody = new CANNON.Body({
+          mass: 1,
+          position: new CANNON.Vec3(position.x, position.y, position.z),
+          quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+          shape: cylinderShape,
+        });
+        super(geometry, Mat, cylinderBody, scene, world);
+
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
@@ -189,6 +198,7 @@ function onMouseoutConnector( event ) {
     }
 }
 
+
 function onConnect( event ) {
     var included = false;
     console.log(event.targetobject)
@@ -212,18 +222,20 @@ function onConnect( event ) {
     console.log(this._connected)
 }
 
-export class cube extends THREE.Mesh {
-    constructor(){
+export class cube extends PhysicsObject {
+    constructor(scene, world, position, quaternion){
         const cubeSize = { x: 0.8, y: 0.8, z: 0.8 };
-        const cubeGeo = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)
+        const cubeGeo = new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z)
         const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' })
-        // const cube_Shape = new CANNON.Box(new CANNON.Vec3(cubeSize.x / 2, cubeSize.y / 2, cubeSize.z / 2));
-        // const cube_Body = new CANNON.Body({
-        //     shape: cube_Shape,
-        //     mass: 0,
-        // })
-        // super(cubeGeo, cubeMat, cube_Body);
-        super(cubeGeo, cubeMat);
+        const cube_Shape = new CANNON.Box(new CANNON.Vec3(cubeSize.x / 2, cubeSize.y / 2, cubeSize.z / 2));
+        const cube_Body = new CANNON.Body({
+            shape: cube_Shape,
+            position: new CANNON.Vec3(position.x, position.y, position.z),
+            quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+            mass: 1,
+        })
+        super(cubeGeo, cubeMat, cube_Body, scene, world);
+        
         this.idendity = 0;
         this.click = ['pick'];
         this.use = 'none';
@@ -263,11 +275,20 @@ function onMouseout( event ) {
     this.material.needsUpdate = true;
 }
 
-export class emittor extends THREE.Mesh {
-    constructor(color,loader){
-        const geometry = new THREE.CylinderGeometry(0.15,0.3,0.15);
+export class emittor extends PhysicsObject {
+    constructor(color, loader, scene, world, position, quaternion){
+        const size = {t:0.15, b:0.3, h:0.15};
+        const geometry = new THREE.CylinderGeometry(size.t, size.b, size.h);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        super(geometry,Mat);
+        const cylinderShape = new CANNON.Cylinder(size.t, size.b, size.h);
+        const cylinderBody = new CANNON.Body({
+          mass: 0,
+          position: new CANNON.Vec3(position.x, position.y, position.z),
+          quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+          shape: cylinderShape,
+        });
+        super(geometry, Mat, cylinderBody, scene, world);
+
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
@@ -322,11 +343,20 @@ function onMouseoutEmittor( event ) {
     }
 }
 
-export class receiver extends THREE.Mesh{
-    constructor(color,loader,targetobject){
-        const geometry = new THREE.CylinderGeometry(0.3,0.3,0.1);
+export class receiver extends PhysicsObject{
+    constructor(color, loader, targetobject, scene, world, position, quaternion){
+        const size = {t:0.3, b:0.3, h:0.1};
+        const geometry = new THREE.CylinderGeometry(size.t, size.b, size.h);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        super(geometry,Mat);
+        const cylinderShape = new CANNON.Cylinder(size.t, size.b, size.h);
+        const cylinderBody = new CANNON.Body({
+          mass: 0,
+          position: new CANNON.Vec3(position.x, position.y, position.z),
+          quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+          shape: cylinderShape,
+        });
+        super(geometry, Mat, cylinderBody, scene, world);
+        
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
@@ -419,29 +449,26 @@ function onReceiverBreak(event){
 }
 
 
-export class door extends THREE.Mesh {
-    constructor(position,orientation,world){
+export class door extends AnimatedPhysicsObject {
+    constructor(scene, world, position, quaternion){
         const doorsize = {x:3, y:2, z:0.05};
         const geometry = new THREE.BoxGeometry(doorsize.x,doorsize.y,doorsize.z);
         const material = new THREE.MeshPhongMaterial({  color: '#800080',emissive: '#800080',specular: '#cd00cd',shininess: 10,transparent: true,opacity: 0.6});
-        super(geometry,material);
-        const Shape = new CANNON.Box(new CANNON.Vec3(doorsize.x / 2, doorsize.y / 2, doorsize.z / 2));
-        this.body = new CANNON.Body({
+        
+        const Shape = new CANNON.Box(new CANNON.Vec3(doorsize.x / 2, doorsize.y / 2, 0.2 + doorsize.z / 2));
+        const doorbody = new CANNON.Body({
             shape: Shape,
+            // position: new CANNON.Vec3(position.x, position.y, position.z),
             mass: 0,
         })
-        this.world = world;
+        super(geometry, material, doorbody, scene, world);
+
         this.identity = 0;
-        this.position.set(position.x,position.y,position.z);
-        this.orientation = orientation;
-        if(orientation == 'z') {
-            const angle = Math.PI / 2; // 45 degrees in radians
-            const axis = new CANNON.Vec3(0, 1, 0); // Y-axis
-            this.body.quaternion.setFromAxisAngle(axis, angle);
-        }
+        this.position.set(position.x, position.y, position.z);
+        this.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+        // this.orientation = orientation;
         this.body.position.copy(this.position);
-        // this.quaternion.copy(this.body.quaternion);
-        this.world.addBody(this.body);
+        this.body.quaternion.copy(this.quaternion);
         this.addEventListener('activate',onActivate);
         this.addEventListener('deactivate',onDeactivate);
         this.name = 'door';
@@ -493,11 +520,20 @@ function onDeactivate(event){
     this.world.addBody(this.body);
 }
 
-export class goal extends THREE.Mesh {
-    constructor(loader){
-        const geometry = new THREE.CylinderGeometry(0.25,0.25,0.2);
+export class goal extends PhysicsObject {
+    constructor(loader, scene, world, position, quaternion){
+        const size = {t:0.25, b:0.25, h:0.2};
+        const geometry = new THREE.CylinderGeometry(size.t, size.b, size.h);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
-        super(geometry,Mat);
+        const cylinderShape = new CANNON.Cylinder(size.t, size.b, size.h);
+        const cylinderBody = new CANNON.Body({
+          mass: 0,
+          position: new CANNON.Vec3(position.x, position.y, position.z),
+          quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+          shape: cylinderShape,
+        });
+        super(geometry, Mat, cylinderBody, scene, world);
+
         const layer = new THREE.Layers();
         layer.set(1);
         this.layers = layer;
