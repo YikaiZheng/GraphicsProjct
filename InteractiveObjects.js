@@ -58,6 +58,18 @@ export class connector extends PhysicsObject {
     setId(id) {
         this.identity = id;
     }
+    sync() {
+        const position = this.body.position.clone();
+        const quaternion = this.body.quaternion.clone();
+        const { x, y, z, w } = quaternion;
+        // Yaw (Y-axis rotation)
+        const yaw = Math.atan2(2 * (w * y + z * x), 1 - 2 * (y * y + z * z));
+        quaternion.setFromEuler(0, yaw, 0, 'YXZ');
+        this.body.quaternion.setFromEuler(0, yaw, 0, 'YXZ');
+
+        super.sync();
+
+    }
 }
 
 function computeColor( sourcelist ){        //This function should be called each time a new laserBeam reach the connector, or an existing laserBeam disconnects.
@@ -450,7 +462,7 @@ function onReceiverBreak(event){
 
 
 export class door extends AnimatedPhysicsObject {
-    constructor(scene, world, position, quaternion){
+    constructor(scene, world, position, orientation){
         const doorsize = {x:3, y:2, z:0.05};
         const geometry = new THREE.BoxGeometry(doorsize.x,doorsize.y,doorsize.z);
         const material = new THREE.MeshPhongMaterial({  color: '#800080',emissive: '#800080',specular: '#cd00cd',shininess: 10,transparent: true,opacity: 0.6});
@@ -465,6 +477,12 @@ export class door extends AnimatedPhysicsObject {
 
         this.identity = 0;
         this.position.set(position.x, position.y, position.z);
+        this.orientation = orientation;
+        var quaternion = {x:0, y:0, z:0, w:1};
+        if(orientation == "z") {
+            quaternion.y = Math.sin(Math.PI/4);
+            quaternion.w = Math.cos(Math.PI/4);
+        }
         this.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
         // this.orientation = orientation;
         this.body.position.copy(this.position);

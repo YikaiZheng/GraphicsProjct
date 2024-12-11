@@ -4,10 +4,10 @@ import WebGL from 'three/addons/capabilities/WebGL.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CameraControls } from './CameraControl';
 import { ToolsGroup } from './ToolsGroup';
-import { cube, connector, emittor, receiver, door, goal } from './InteractiveObjects'
-import {Dash, DashesGroup, RaysGroup} from './RaysGroup'
-import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects'
-import { PlayerControl } from './PlayerControl'
+import { cube, connector, emittor, receiver, door, goal } from './InteractiveObjects';
+import {Dash, DashesGroup, RaysGroup} from './RaysGroup';
+import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects';
+import { PlayerControl } from './PlayerControl';
 import { Boundary_1 } from './boundaries';
 
 
@@ -41,6 +41,7 @@ var player1_Control = new PlayerControl(player1, world);
 player1.addToWorld();
 player1.addToScene();
 player1.camera.layers.enable(2);
+player1.load_model();
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -115,15 +116,15 @@ const cube1 = new cube(scene, world, {x:2, y:0.4, z:-6}, {x:0, y:0, z:0, w:1});
 const goal0 = new goal(gltfLoader, scene, world, {x:9, y:1, z:-0.5}, {x:0, y:0, z:0, w:1});
 // goal0.position.set(9,1,-0.5);
 goal0.setAnimation().then((mixer)=>{const goalmixer = mixer; mixers.push(goalmixer);});
-const door1 = new door(scene, world, {x:5, y:1, z:-0.5}, {x:0, y:Math.sin(Math.PI/4), z:0, w:Math.cos(Math.PI/4)});
+const door1 = new door(scene, world, {x:5, y:1, z:-0.5}, "z");
 const mixer1 = new THREE.AnimationMixer(door1);
 door1.setAnimation(mixer1);
 mixers.push(mixer1);
-const door2 = new door(scene, world, {x:7, y:1, z:-0.5}, {x:0, y:Math.sin(Math.PI/4), z:0, w:Math.cos(Math.PI/4)});
+const door2 = new door(scene, world, {x:7, y:1, z:-0.5}, "z");
 const mixer2 = new THREE.AnimationMixer(door2);
 door2.setAnimation(mixer2);
 mixers.push(mixer2);
-const door3 = new door(scene, world, {x:-0.5, y:1, z:-5}, {x:0, y:0, z:0, w:1});
+const door3 = new door(scene, world, {x:-0.5, y:1, z:-5}, "x");
 const mixer3 = new THREE.AnimationMixer(door3);
 door3.setAnimation(mixer3);
 mixers.push(mixer3);
@@ -186,8 +187,9 @@ function animate() {
 	goal0.update(delta);
 	for(var mixer of mixers){
 		mixer.update(delta);
-
 	}
+	player1.update_mixer(delta);
+	// robotmixer.update(delta*2);
 	renderer.render( scene, player1.camera );
 }
 

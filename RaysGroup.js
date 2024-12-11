@@ -101,12 +101,10 @@ export class LaserBeam extends THREE.Mesh{
     console.log(this)
     }
     intersect(intersectobjects){       
-        var intersects = this.raycaster.intersectObjects(intersectobjects, false);         //TODO: Recompute origin and direction before intersecting
-        // console.log(intersects.length)
-        var position = intersects[0].point;
         const pos = computepositions(this.startobject,this.endobject);
         const startposition = pos[0];
-        const dvector = new THREE.Vector3().subVectors(position, startposition);
+        const endposition = pos[1];
+        var dvector = new THREE.Vector3().subVectors(endposition, startposition);
         length = dvector.length();
         // console.log(dvector);
         const theta = Math.acos(dvector.y/length);
@@ -116,6 +114,23 @@ export class LaserBeam extends THREE.Mesh{
             phi = phi + Math.PI;
         }
         const euler = new THREE.Euler(theta,phi,0,'YXZ');
+        this.raycaster.ray.origin.copy(startposition);
+        this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
+        var intersects = this.raycaster.intersectObjects(intersectobjects, false);         //TODO: Recompute origin and direction before intersecting
+        // console.log(intersects.length)
+        var position = intersects[0].point;
+        // const startposition = pos[0];
+        // const dvector = new THREE.Vector3().subVectors(position, startposition);
+        // length = dvector.length();
+        // // console.log(dvector);
+        // const theta = Math.acos(dvector.y/length);
+        // var phi = Math.atan(dvector.x/dvector.z);
+        // // console.log(phi)
+        // if(dvector.z<0){
+        //     phi = phi + Math.PI;
+        // }
+        // const euler = new THREE.Euler(theta,phi,0,'YXZ');
+        dvector = new THREE.Vector3().subVectors(position, startposition);
         this.position.set(startposition.x+dvector.x/2,startposition.y+dvector.y/2,startposition.z+dvector.z/2);
         this.rotation.copy(euler);                                                                                        //First update the geometry of the laser. This can be helpful when connectors' position change without picking it (e.g. lifted up by fan)
         var distance = position.distanceTo(this.raycaster.ray.origin)

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 
 export class PhysicsObject extends THREE.Mesh {
@@ -50,7 +51,7 @@ export class AnimatedPhysicsObject extends PhysicsObject {
 export class PlayerObject extends PhysicsObject {
     constructor(position, scene, world) {
 
-        const boxSize = { x: 1, y: 1.7, z: 1 };
+        const boxSize = { x: 1.2, y: 1.8, z: 0.6 };
         const box_Shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
         const body_player = new CANNON.Body({
             shape: box_Shape,
@@ -58,11 +59,15 @@ export class PlayerObject extends PhysicsObject {
         })
         body_player.position.set(position.x, position.y, position.z);
         const mesh_Geo = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
-        const mesh_Mat = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-        
+        const mesh_Mat = new THREE.MeshBasicMaterial({
+            color: 0x0000ff,  // Set the color of the material
+            opacity: 0.2,     // Set opacity (0 = fully transparent, 1 = fully opaque)
+            transparent: true // Enable transparency
+        });
         super(mesh_Geo, mesh_Mat, body_player, scene, world);
         
-        this.init_camera_offset = new THREE.Vector3(0, 0.8, -0.55);
+        // this.init_camera_offset = new THREE.Vector3(0, 0.7, -0.3);
+        this.init_camera_offset = new THREE.Vector3(0, 1.2, 1.5);
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
         this.camera.position.set(position.x, position.y, position.z);
         this.camera.position.add(this.init_camera_offset);
@@ -82,16 +87,118 @@ export class PlayerObject extends PhysicsObject {
         this.attached = [];
         this.attached_offset = [];
         this.attached_abletoPlace = [];
+        this.attached_distance = 2.5;
         // this.position.copy(this.body.position);
         // this.quaternion.copy(this.body.quaternion);
+
+        this.model = null;
+        this.mixer = null;
+        this.action = null;
+        this.animation_time = 0;
+        this.jumping = false;
+        this.animation_idx = 0;
+        this.start_frame = 0;
+        this.end_frame = 31;
+        this.done_load_model = false;
+        this.playspeed = 2;
     }
+
+    load_model() {
+        const robotloader = new GLTFLoader();
+        var robotmixer, robotaction, robotarmup;
+        robotloader.load(
+            '/robot/robot2.gltf',
+            (gltf) => {
+                robotmixer = new THREE.AnimationMixer(gltf.scene);
+                this.model = gltf.scene;
+                this.scene.add(gltf.scene);
+                robotarmup = robotmixer.clipAction(gltf.animations[0]);
+                robotaction = robotmixer.clipAction(gltf.animations[1]);
+                console.log("NUM ANIMATIONS:", gltf.animations.length);
+                this.mixer = robotmixer;
+                this.action_armup = robotarmup;
+                this.action = robotaction;
+                this.action.setLoop(THREE.LoopRepeat);
+                const duration = this.action.getClip().duration;
+                this.action.setDuration(duration/this.playspeed);
+                this.action.play();
+                this.done_load_model = true;
+            },
+            (xhr) => { console.log(`Loading: ${(xhr.loaded / xhr.total) * 100}% complete`); },
+            (error) => { console.error('An error occurred while loading the GLTF scene:', error); }
+        );
+    }
+
+    update_mixer(delta) {
+        if(this.done_load_model) {
+            const tot_frame = 340;
+            const fpm = 24 * this.playspeed;
+            var delta_new = delta;
+            this.animation_time += delta;
+            // console.log("animation_time", this.animation_time*24);
+            if(this.animation_time > this.end_frame/fpm) {
+                if(this.jumping) {
+                    this.jumping = false;
+                }
+                else {
+                    delta_new += (tot_frame - this.end_frame + this.start_frame) / fpm;
+                    this.animation_time += (this.start_frame - this.end_frame) / fpm;
+                }
+            }
+            // console.log("update_mixer", delta_new);
+            this.mixer.update(delta_new);
+        }
+    }
+
+    // idx   0:idle  1:walk  2:walk_right  3:walk_left  4:walk_back  5:jump 
+    //       -1:arm_up  -2:arm_down
+    update_animation_idx(idx) {
+        console.log("animation_idx", idx);
+        console.log("jumping?", this.jumping);
+        if(idx == this.animation_idx) { return; }
+        if(idx == -1 || idx == -2) {
+            this.action_armup.stop();
+            if(idx == -1) {
+                this.action_armup.setEffectiveTimeScale(1);
+            }
+            else if(idx == -2) {
+                this.action_armup.setEffectiveTimeScale(-1);
+                this.action_armup.time += 0.25;
+            }
+            this.action_armup.setLoop(THREE.LoopOnce);
+            this.action_armup.clampWhenFinished = true;
+            this.action_armup.play();
+        }
+        else if (!this.jumping) {
+            this.animation_idx = idx;
+            const fpm = 24 * this.playspeed;
+            const start_frame = [0, 32, 73, 113, 153, 193];
+            const end_frame = [31, 72, 112, 152, 192, 200];
+            this.start_frame = start_frame[idx];
+            this.end_frame = end_frame[idx];
+            if(this.done_load_model) {
+                this.action.stop();
+                this.action.play();
+                this.animation_time = 0;
+                if(idx == 5) {
+                    this.jumping = true;
+                    this.action.setLoop(THREE.LoopOnce); // Play the animation only once
+                }
+                else {
+                    this.action.setLoop(THREE.LoopRepeat); // Play the animation only once
+                }
+                this.update_mixer(this.start_frame / fpm);
+            }
+        }
+    }
+
 
     add_obj(object) {
         this.attached.push(object);
         // const facing_direction = this.facing_direction.clone();
         // facing_direction.multiplyScalar(3);
         // this.attached_offset.push(facing_direction);
-        this.attached_offset.push(new THREE.Vector3(0, 0, -3));
+        this.attached_offset.push(new THREE.Vector3(0, 0, -this.attached_distance));
         this.attached_abletoPlace.push(true);
     }
 
@@ -101,11 +208,10 @@ export class PlayerObject extends PhysicsObject {
         this.attached_offset.splice(idx, 1);
         this.attached_abletoPlace.splice(idx, 1);
     }
-
     
     test_intersection(idx) {
         const targetBody = this.attached[idx].body;
-        console.log(targetBody);
+        // console.log(targetBody);
         // Compute the bounding box of the target body
         const targetAABB = new CANNON.AABB();
         targetBody.shapes[0].calculateWorldAABB(
@@ -114,32 +220,44 @@ export class PlayerObject extends PhysicsObject {
             targetAABB.lowerBound,
             targetAABB.upperBound
         );
+        // console.log(targetBody.quaternion);
+        // console.log(targetAABB.lowerBound);
+        // console.log(targetAABB.upperBound);
     
         // Iterate through all other bodies in the world
         for (const otherBody of this.world.bodies) {
-        if (targetBody !== otherBody) {
-            // Compute the bounding box of the other body
-            const otherAABB = new CANNON.AABB();
-            otherBody.shapes[0].calculateWorldAABB(
-            otherBody.position,
-            otherBody.quaternion,
-            otherAABB.lowerBound,
-            otherAABB.upperBound
-            );
-    
-            // Check if the AABBs intersect
-            if (targetAABB.overlaps(otherAABB)) {
-            console.log("Intersection detected with body:", otherBody);
-            return true; // Exit early if any intersection is found
+            if (targetBody !== otherBody) {
+                // Compute the bounding box of the other body
+                const otherAABB = new CANNON.AABB();
+                otherBody.shapes[0].calculateWorldAABB(
+                    otherBody.position,
+                    otherBody.quaternion,
+                    otherAABB.lowerBound,
+                    otherAABB.upperBound
+                );
+        
+                // Check if the AABBs intersect
+                if (targetAABB.overlaps(otherAABB)) {
+                    // console.log("Intersection detected with body:", otherBody);
+                    return true; // Exit early if any intersection is found
+                }
             }
         }
-        }
-    
+        
         return false; // No intersections found
     }
-
-    set_velocity(v) {
-        this.body.velocity.set(v.x, v.y, v.z);
+    
+    test_standing(body) {
+        // Create a ray from the body’s current position straight down (negative y-axis)
+        const ray = new CANNON.Ray(new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z),
+        new CANNON.Vec3(this.body.position.x, this.body.position.y-1, this.body.position.z));
+    
+        // Cast the ray and check if it hits something
+        var options = {
+            skipBackfaces: true,    // Include backfaces
+        };
+        const hit = ray.intersectWorld(this.world, options);
+        return hit;
     }
 
     move(dr) {
@@ -164,6 +282,7 @@ export class PlayerObject extends PhysicsObject {
         // Yaw (Y-axis rotation)
         const yaw = Math.atan2(2 * (w * y + z * x), 1 - 2 * (y * y + z * z));
         quaternion.setFromEuler(0, yaw, 0, 'YXZ');
+        this.body.quaternion.setFromEuler(0, yaw, 0, 'YXZ');
 
         // Camera rotation and position
         // this.camera.rotation.y = yaw;
@@ -187,7 +306,7 @@ export class PlayerObject extends PhysicsObject {
             obj_offset.applyQuaternion(this.camera.quaternion);
             var obj_position = new THREE.Vector3(position.x, position.y, position.z);
             obj_position.add(obj_offset);
-            this.attached[i].body.position.set(obj_position.x, obj_position.y, obj_position.z);
+            this.attached[i].body.position.set(obj_position.x, obj_position.y+0.5, obj_position.z);
             this.attached[i].body.quaternion.set(this.body.quaternion.x, this.body.quaternion.y, this.body.quaternion.z, this.body.quaternion.w);
             // console.log(this.attached[i].body.position);
             // console.log(this.attached[i].position);
@@ -195,6 +314,15 @@ export class PlayerObject extends PhysicsObject {
         }
 
         super.sync();
+
+        if(this.done_load_model) {
+            this.model.position.copy(this.body.position);
+            this.model.position.y -= 0.9;
+            this.model.quaternion.copy(this.body.quaternion);
+            let additionalRotation = new THREE.Quaternion();
+            additionalRotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+            this.model.quaternion.multiply(additionalRotation);
+        }
     }
 
     addToScene() {

@@ -9,14 +9,14 @@ export class Boundary_1 {
         this.scene = scene;
         this.bodies = [];
         
-        var groundShape = new CANNON.Plane();
+        var groundShape = new CANNON.Box(new CANNON.Vec3(1000, 1, 1000));
         var groundBody = new CANNON.Body({
             shape: groundShape,
             mass: 0 // mass == 0 makes the body static
         });
         world.addBody(groundBody);
-        groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI / 2); // Rotate 90° around the z-axis
-        groundBody.position.set(0, 0, 0); // Set the position
+        // groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI / 2); // Rotate 90° around the z-axis
+        groundBody.position.set(0, -1, 0); // Set the position
         const planeGeometry = new THREE.PlaneGeometry(200, 200); // Width and height of the plane
         const planeMaterial = new THREE.MeshStandardMaterial({
           color: 0x00ff00,
