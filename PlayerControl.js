@@ -18,10 +18,12 @@ export class PlayerControl {
         this.mouse_deltaY = 0;
 
         document.addEventListener('keydown', (event) => {
-            if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
-                this.key_state[event.key] = true; // Mark key as pressed
-                this.key_down[event.key] = true; // Mark key as pressed
-                console.log(`Key pressed: ${event.key}`);
+            if(this.isMouselocked) {
+                if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
+                    this.key_state[event.key] = true; // Mark key as pressed
+                    this.key_down[event.key] = true; // Mark key as pressed
+                    console.log(`Key pressed: ${event.key}`);
+                }
             }
         });
         document.addEventListener('keyup', (event) => {
@@ -37,7 +39,9 @@ export class PlayerControl {
 
         // Request Pointer Lock on Click
         element.addEventListener('click', () => {
-            element.requestPointerLock();
+            if(!this.isMouselocked) {
+                element.requestPointerLock();
+            }
         });
 
         // Listen for Pointer Lock Changes
@@ -108,19 +112,46 @@ export class PlayerControl {
         // if (this.key_state['ArrowRight'] || this.key_state['d']) this.player.move(zerovec.sub(direction_left).multiplyScalar(speed));
         // beautiful movement
         var v = new THREE.Vector3(0, 0, 0);
-        if (this.key_state['ArrowUp'] || this.key_state['w']) v.add(direction_front);
-        if (this.key_state['ArrowDown'] || this.key_state['s']) v.sub(direction_front);
-        if (this.key_state['ArrowLeft'] || this.key_state['a']) v.add(direction_left);
-        if (this.key_state['ArrowRight'] || this.key_state['d']) v.sub(direction_left);
+        var animation_idx = 0;
+        if (this.key_state['ArrowUp'] || this.key_state['w']) {
+            v.add(direction_front); 
+            if(animation_idx == 0) {
+                animation_idx = 1;
+            }
+        }
+        if (this.key_state['ArrowDown'] || this.key_state['s']) {
+            v.sub(direction_front);
+            if(animation_idx == 0) {
+                animation_idx = 4;
+            }
+        }
+        if (this.key_state['ArrowLeft'] || this.key_state['a']) {
+            v.add(direction_left);
+            if(animation_idx == 0) {
+                animation_idx = 3;
+            }
+        }
+        if (this.key_state['ArrowRight'] || this.key_state['d']) {
+            v.sub(direction_left);
+            if(animation_idx == 0) {
+                animation_idx = 2;
+            }
+        }
         v.normalize();
         v.multiplyScalar(5);
         // v.y = this.player.velocity.y;
+        // console.log("v", this.player.velocity);
         if (this.key_down[' ']) {  // and player on ground
-            this.player.body.velocity.y += 5;
+            if(this.player.test_standing()) {
+                animation_idx = 5;
+                this.player.body.velocity.y += 5;
+            }
         }
         // console.log(v);
         this.player.body.velocity.x = v.x;
         this.player.body.velocity.z = v.z;
+        // console.log("animation_idx", animation_idx);
+        this.player.update_animation_idx(animation_idx);
 
         this.player.rotate(-this.mouse_deltaX * 0.005, -this.mouse_deltaY * 0.005)
 
