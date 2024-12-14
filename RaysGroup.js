@@ -141,25 +141,29 @@ export class LaserBeam extends THREE.Mesh{
             intersectobject = intersects[1].object;
         }
         if(intersectobject.identity === this.endobject.identity && this._intersectobject.identity!=this.endobject.identity){        //If reach endobject, the two objects are connected
-            _event.type = 'receive';
-            _event.color = this.color;
-            _event.sourceobject = this.startobject;
-            this.endobject.dispatchEvent(_event);
+            // _event.type = 'receive';
+            // _event.color = this.color;
+            // _event.sourceobject = this.startobject;
+            // this.endobject.dispatchEvent(_event);
+            this.endobject.onReceive(this.startobject, this.color);
         }
         if(intersectobject.identity != this.endobject.identity && this._intersectobject.identity===this.endobject.identity){        //If cannot reach endobject, disconnected
-            _event.type = 'break';
-            _event.color = this.color;
-            _event.sourceobject = this.startobject;
-            this.endobject.dispatchEvent(_event);
+            // _event.type = 'break';
+            // _event.color = this.color;
+            // _event.sourceobject = this.startobject;
+            // this.endobject.dispatchEvent(_event);
+            this.endobject.onBreak(this.startobject, this.color);
         }
         this._intersectobject = intersectobject;
     }
     delete(){
         if(this._intersectobject.identity === this.endobject.identity){
-            _event.type = 'break';
-            _event.color = this.color;
-            _event.sourceobject = this.startobject;
-            this.endobject.dispatchEvent(_event);                    
+            // _event.type = 'break';
+            // _event.color = this.color;
+            // _event.sourceobject = this.startobject;
+            // this.endobject.dispatchEvent(_event);
+            
+            this.endobject.onBreak(this.startobject, this.color);                    
         }
         this.material.dispose();
         this.geometry.dispose();

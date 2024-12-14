@@ -7,7 +7,7 @@ import { ToolsGroup } from './ToolsGroup';
 import { cube, connector, emittor, receiver, door, goal } from './InteractiveObjects';
 import {Dash, DashesGroup, RaysGroup} from './RaysGroup';
 import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects';
-import { PlayerControl } from './PlayerControl';
+import { PlayerControl_KeyMouse, PlayerControl_Joystick } from './PlayerControl';
 import { Boundary_1 } from './boundaries';
 
 
@@ -20,24 +20,10 @@ const clock = new THREE.Clock();
 console.log(window.innerWidth)
 console.log(window.innerHeight)
 
-// const boxSize = { x: 1, y: 1, z: 1 };
-// const box_Shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
-// const box_Body = new CANNON.Body({
-// 	shape: box_Shape,
-// 	mass: 1,
-// })
-// // console.log(box_Body.index);
-// box_Body.position.set(0, 2, 0); // Set the position
-// const box_Geometry = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
-// const box_Material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-// const box = new PhysicsObject(box_Geometry, box_Material, box_Body)
-// box.addTo(world, scene);
-
 const boundary_1 = new Boundary_1(world, scene);
 
 const starting_position = new THREE.Vector3(-4, 1.5, 0);
 var player1 = new PlayerObject(starting_position, scene, world);
-var player1_Control = new PlayerControl(player1, world);
 player1.addToWorld();
 player1.addToScene();
 player1.camera.layers.enable(2);
@@ -48,11 +34,16 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 window.addEventListener('resize', () => {
 	renderer.setSize(window.innerWidth, window.innerHeight);
 });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
 document.body.appendChild( renderer.domElement );
 const gltfLoader = new GLTFLoader();
 const url = '/level1.glb';
 gltfLoader.load(url, (gltf) => {
-	const root = gltf.scene;
+	var root = gltf.scene;
+	root.castShadow = true;
+	root.receiveShadow = true;
 	scene.add(root);
 });
 
@@ -78,11 +69,13 @@ const texture = loader.load(
 	var hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.2);
 	hemiLight.position.set(0, 50, 0);
 	scene.add(hemiLight);
-	light.position.set(5, 10, 0)
-	light.target.position.set(0, 0, 0)
-	scene.add(light)
-	scene.add(ambientlight)
-	scene.add(light.target)
+	light.position.set(5, 10, 0);
+	light.castShadow = true;
+	// light.shadow.intensity = 100;
+	light.target.position.set(0, 0, 0);
+	scene.add(light);
+	scene.add(ambientlight);
+	scene.add(light.target);
 }
 
 // camera.position.set(-4, 1.7, 0);
@@ -102,7 +95,7 @@ const texture = loader.load(
 const mixers = [];
 
 const dashes = new DashesGroup();
-const tools = new ToolsGroup(player1, scene, world);
+const tools = new ToolsGroup(player1, scene, world, renderer);
 const lasers = new RaysGroup();
 
 const connector1 = new connector(gltfLoader, dashes, lasers, scene, world, 
@@ -164,12 +157,15 @@ tools.add(receiver2);
 tools.add(receiver3);
 
 lasers.addintersectobjects(tools.children);
-tools.listenToPointerEvents(renderer, player1.camera);
+// tools.listenToPointerEvents(renderer, player1.camera);
 tools.addToWorld();
 tools.addToScene();
 // scene.add(tools);
 scene.add(dashes);
 scene.add(lasers);
+
+// var player1_Control = new PlayerControl_Joystick(player1, world, tools);
+var player1_Control = new PlayerControl_KeyMouse(player1, world, tools);
 
 var fixedTimeStep = 1.0 / 60.0; // seconds
 var maxSubSteps = 3;

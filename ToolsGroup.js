@@ -11,7 +11,7 @@ const _pointer = new Vector2();
 const _event = { type: '', data: _pointer, targetobject: null};
 
 class ToolsGroup extends Group {
-    constructor(player, scene, world) {
+    constructor(player, scene, world, renderer) {
         super();
         // this._attached = [];
         this.currentObject = null;
@@ -19,6 +19,7 @@ class ToolsGroup extends Group {
         this.player = player;
         this.scene = scene;
         this.world = world;
+        this.renderer = renderer;
         // console.log(this.scene);
     }
 
@@ -48,188 +49,185 @@ class ToolsGroup extends Group {
         }
     }
 
-    listenToPointerEvents( renderer, camera ) {
-
-		const scope = this;
-		const raycaster = new Raycaster();
+    onClickEvent() {
+        const scope = this;
+        const camera = scope.player.camera;
+        const renderer = scope.renderer;
+        const raycaster = new Raycaster();
         raycaster.layers.enable(1);
 
-		const element = renderer.domElement;
+        const element = renderer.domElement;
 
-        function onClickEvent( event ) {
-            console.log('resolving click event');
-            event.stopPropagation();
+        const rect = renderer.domElement.getBoundingClientRect();
 
-			const rect = renderer.domElement.getBoundingClientRect();
+        // _pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
+        // _pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
+        _pointer.x = 0;
+        _pointer.y = 0;
+        raycaster.setFromCamera( _pointer, camera );
 
-			// _pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
-			// _pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
-            _pointer.x = 0;
-            _pointer.y = 0;
-			raycaster.setFromCamera( _pointer, camera );
-
-			const intersects = raycaster.intersectObjects( scope.children, false );
-            var is_holding_connector = false;
-            var has_intersection = false;
-            if(scope.player.attached.length > 0 && scope.player.attached[0].use === 'connect') {
-                is_holding_connector = true;
-            }
-            var intersection = null;
-            if(intersects.length > 0) {
-                has_intersection = true;
-                intersection = intersects[ 0 ];
-                if(is_holding_connector && intersection.object.identity === scope.player.attached[0].identity) {
-                    if(intersects.length > 1) {
-                        intersection = intersects[ 0 ];
-                    }
-                    else {
-                        has_intersection = false;
-                        intersection = null;
-                    }
+        const intersects = raycaster.intersectObjects( scope.children, false );
+        var is_holding_connector = false;
+        var has_intersection = false;
+        if(scope.player.attached.length > 0 && scope.player.attached[0].use === 'connect') {
+            is_holding_connector = true;
+        }
+        var intersection = null;
+        if(intersects.length > 0) {
+            has_intersection = true;
+            intersection = intersects[ 0 ];
+            if(is_holding_connector && intersection.object.identity === scope.player.attached[0].identity) {
+                if(intersects.length > 1) {
+                    intersection = intersects[ 1 ];
                 }
-            }
-
-            
-            if(has_intersection && intersection.object.click.includes('pick') && scope.player.attached.length === 0){
-                console.log('pick object')
-                const object = intersection.object;
-                const uv = intersection.uv;
-                // scope._attached.push(object);
-                console.log(object.parent);
-                // scope.remove( object );
-                object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
-                // camera.add( object );
-                scope.player.add_obj(object);
-                object.removeFromWorld();
-                console.log(object.parent);
-                _event.type = 'pick';
-
-                _event.data.set( uv.x, 1 - uv.y );
-                object.dispatchEvent(_event);
-                scope.player.update_animation_idx(-1);
-            }
-            else if(has_intersection && intersection.object.click.includes('win') &&  scope.player.attached.length === 0){
-                console.log('reach goal')
-                const object = intersection.object;
-                const uv = intersection.uv;
-                _event.type = 'reach';
-                _event.data.set( uv.x, 1 - uv.y );
-                object.dispatchEvent(_event);
-            }
-            else if(has_intersection && intersection.object.click.includes('connect') && is_holding_connector){
-                const connectobject =  scope.player.attached[0];
-                if(intersection.object.identity!=connectobject.identity){
-                    console.log(intersection.object);
-                    _event.targetobject = intersection.object;
-                    _event.type = 'connect';
-                    connectobject.dispatchEvent(_event);
-                    if(intersection.object.use==='connect'){
-                        _event.targetobject = connectobject;
-                        _event.type = 'connect';
-                        intersection.object.dispatchEvent(_event);
-                    }
-                }
-            }
-            else {
-                if  (scope.player.attached.length > 0) {
-                    if((!has_intersection) || intersection.object == scope.player.attached[0] || intersection.object == scope.player || intersection.distance > scope.player.attached_distance) {
-                        if(scope.player.test_intersection(0) === false) {
-                            _event.type = 'place';
-                            const object = scope.player.attached[0];
-                            console.log(object.parent);
-                            // camera.remove( object );
-                            scope.player.remove_obj(object);
-                            object.addToWorld();
-                            object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
-                            // scope.attach(object);
-                            console.log(object.parent);
-                            object.dispatchEvent(_event);
-                            scope.player.update_animation_idx(-2);
-                        }
-                    }
+                else {
+                    has_intersection = false;
+                    intersection = null;
                 }
             }
         }
 
-		function onPointerEvent( event ) {
-
-			event.stopPropagation();
-
-			const rect = renderer.domElement.getBoundingClientRect();
-
-			// _pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
-			// _pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
-            _pointer.x = 0;
-            _pointer.y = 0;
-			raycaster.setFromCamera( _pointer, camera );
-
-			const intersects = raycaster.intersectObjects( scope.children, false );
-            var is_holding_connector = false;
-            var has_intersection = false;
-            if(scope.player.attached.length > 0 && scope.player.attached[0].use === 'connect') {
-                is_holding_connector = true;
+        
+        if(has_intersection && intersection.object.click.includes('pick') && scope.player.attached.length === 0){
+            console.log('pick object')
+            const object = intersection.object;
+            const uv = intersection.uv;
+            // scope._attached.push(object);
+            console.log(object.parent);
+            // scope.remove( object );
+            object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
+            // camera.add( object );
+            scope.player.add_obj(object);
+            object.removeFromWorld();
+            console.log(object.parent);
+            // let _event = new Event('pick');    
+            // _event.data.set( uv.x, 1 - uv.y );
+            // object.dispatchEvent(_event);
+            object.onPick();
+            scope.player.update_animation_idx(-1);
+        }
+        else if(has_intersection && intersection.object.click.includes('win') &&  scope.player.attached.length === 0){
+            console.log('reach goal')
+            const object = intersection.object;
+            const uv = intersection.uv;
+            // let _event = new Event('reach');    
+            // _event.data.set( uv.x, 1 - uv.y );
+            // object.dispatchEvent(_event);
+            object.onReach();
+        }
+        else if(has_intersection && intersection.object.click.includes('connect') && is_holding_connector){
+            console.log('connect');
+            console.log(intersection.object);
+            const connectobject =  scope.player.attached[0];
+            if(intersection.object.identity!=connectobject.identity){
+                // _event.targetobject = intersection.object;
+                // connectobject.dispatchEvent(_event);
+                console.log('onConnect', intersection.object);
+                connectobject.onConnect(intersection.object);
+                if(intersection.object.use==='connect'){
+                    // _event.targetobject = connectobject;
+                    // _event.type = 'connect';
+                    // intersection.object.dispatchEvent(_event);
+                    intersection.object.onConnect(connectobject);
+                }
             }
-            var intersection = null;
-            if(intersects.length > 0) {
-                has_intersection = true;
-                intersection = intersects[ 0 ];
-                if(is_holding_connector && intersection.object.identity === scope.player.attached[0].identity) {
-                    if(intersects.length > 1) {
-                        intersection = intersects[ 0 ];
+        }
+        else {
+            if  (scope.player.attached.length > 0) {
+                if((!has_intersection) || intersection.object == scope.player.attached[0] || intersection.object == scope.player || intersection.distance > scope.player.attached_distance) {
+                    if(scope.player.test_intersection(0) === false) {
+                        console.log('place object');
+                        const object = scope.player.attached[0];
+                        console.log(object.parent);
+                        // camera.remove( object );
+                        scope.player.remove_obj(object);
+                        object.addToWorld();
+                        object.matrixWorld.decompose( object.position, object.quaternion, object.scale );
+                        // scope.attach(object);
+                        object.onPlace();
+                        // object.dispatchEvent(_event);
+                        scope.player.update_animation_idx(-2);
                     }
-                    else {
-                        has_intersection = false;
-                        intersection = null;
-                    }
                 }
             }
-            // console.log(intersects.length);
-            // console.log(is_holding_connector);
-            // console.log(has_intersection);
+        }
+    }
 
-			if ( has_intersection && intersection.object.click.includes('pick') && scope.player.attached.length == 0) {
-                // console.log("PICKABLE");
+    onPointerEvent() {
+        const scope = this;
+        const camera = scope.player.camera;
+        const renderer = scope.renderer;
+        const raycaster = new Raycaster();
+        raycaster.layers.enable(1);
 
-				const object = intersection.object;
-				const uv = intersection.uv;
-                if ((!scope.currentObject || scope.currentObject.identity != object.identity) ){
-                    _event.type = 'mouseover';
-                    _event.data.set( uv.x, 1 - uv.y );
-                    object.dispatchEvent( _event );
-                    scope.currentObject = object;
-                    
+        const element = renderer.domElement;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        
+        // _pointer.x = ( event.clientX - rect.left ) / rect.width * 2 - 1;
+        // _pointer.y = - ( event.clientY - rect.top ) / rect.height * 2 + 1;
+        _pointer.x = 0;
+        _pointer.y = 0;
+        raycaster.setFromCamera( _pointer, camera );
+
+        const intersects = raycaster.intersectObjects( scope.children, false );
+        var is_holding_connector = false;
+        var has_intersection = false;
+        if(scope.player.attached.length > 0 && scope.player.attached[0].use === 'connect') {
+            is_holding_connector = true;
+        }
+        var intersection = null;
+        if(intersects.length > 0) {
+            has_intersection = true;
+            intersection = intersects[ 0 ];
+            if(is_holding_connector && intersection.object.identity === scope.player.attached[0].identity) {
+                if(intersects.length > 1) {
+                    intersection = intersects[ 1 ];
                 }
-			}
-            else if ( has_intersection && intersection.object.click.includes('connect') && is_holding_connector) {
-                // console.log("CONNECTABLE");
-				const object = intersection.object;
-				const uv = intersection.uv;
-                if ((!scope.currentObject || scope.currentObject.identity != object.identity)){
-                    _event.type = 'mouseover';
-                    _event.data.set( uv.x, 1 - uv.y );
-                    object.dispatchEvent( _event );
-                    scope.currentObject = object;
+                else {
+                    has_intersection = false;
+                    intersection = null;
                 }
             }
-            else {
-                // console.log("NO INTERSECTION");
-                if(scope.currentObject){
-                    _event.type = 'mouseout';
-                    scope.currentObject.dispatchEvent(_event);
-                    scope.currentObject = null;
-                }
+        }
+        // console.log(intersects.length);
+        // console.log(is_holding_connector);
+        // console.log(has_intersection);
+
+        if ( has_intersection && intersection.object.click.includes('pick') && scope.player.attached.length == 0) {
+            // console.log("PICKABLE");
+
+            const object = intersection.object;
+            const uv = intersection.uv;
+            if ((!scope.currentObject || scope.currentObject.identity != object.identity) ){
+                // _event.data.set( uv.x, 1 - uv.y );
+                // object.dispatchEvent( _event );
+                object.onMouseover();
+                scope.currentObject = object;
+                
             }
-		}
-
-		// document.addEventListener( 'pointerdown', onPointerEvent );
-		// document.addEventListener( 'pointerup', onPointerEvent );
-		// document.addEventListener( 'pointermove', onPointerEvent );
-		// document.addEventListener( 'mousedown', onPointerEvent );
-		// document.addEventListener( 'mouseup', onPointerEvent );
-		document.addEventListener( 'mousemove', onPointerEvent );
-		document.addEventListener( 'click', onClickEvent );
-
-	}
+        }
+        else if ( has_intersection && intersection.object.click.includes('connect') && is_holding_connector) {
+            // console.log("CONNECTABLE");
+            const object = intersection.object;
+            const uv = intersection.uv;
+            if ((!scope.currentObject || scope.currentObject.identity != object.identity)){
+                // _event.data.set( uv.x, 1 - uv.y );
+                // object.dispatchEvent( _event );
+                object.onMouseover();
+                scope.currentObject = object;
+            }
+        }
+        else {
+            // console.log("NO INTERSECTION");
+            if(scope.currentObject){
+                // let _event = new Event('mouseout'); 
+                // scope.currentObject.dispatchEvent(_event);
+                scope.currentObject.onMouseout();
+                scope.currentObject = null;
+            }
+        }
+    }
 
 }
 

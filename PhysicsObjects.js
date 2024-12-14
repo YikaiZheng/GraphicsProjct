@@ -9,6 +9,8 @@ export class PhysicsObject extends THREE.Mesh {
         this.body = body;
         this.world = world;
         this.scene = scene;
+        this.receiveShadow = true;
+        this.castShadow = true;
         // this.position.copy(this.body.position);
         // this.quaternion.copy(this.body.quaternion);
     }
@@ -91,6 +93,7 @@ export class PlayerObject extends PhysicsObject {
         // this.position.copy(this.body.position);
         // this.quaternion.copy(this.body.quaternion);
 
+        this.castShadow = false;
         this.model = null;
         this.mixer = null;
         this.action = null;
@@ -111,6 +114,7 @@ export class PlayerObject extends PhysicsObject {
             (gltf) => {
                 robotmixer = new THREE.AnimationMixer(gltf.scene);
                 this.model = gltf.scene;
+                this.model.castShadow = true;
                 this.scene.add(gltf.scene);
                 robotarmup = robotmixer.clipAction(gltf.animations[0]);
                 robotaction = robotmixer.clipAction(gltf.animations[1]);
@@ -153,8 +157,8 @@ export class PlayerObject extends PhysicsObject {
     // idx   0:idle  1:walk  2:walk_right  3:walk_left  4:walk_back  5:jump 
     //       -1:arm_up  -2:arm_down
     update_animation_idx(idx) {
-        console.log("animation_idx", idx);
-        console.log("jumping?", this.jumping);
+        // console.log("animation_idx", idx);
+        // console.log("jumping?", this.jumping);
         if(idx == this.animation_idx) { return; }
         if(idx == -1 || idx == -2) {
             this.action_armup.stop();
