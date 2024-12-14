@@ -490,6 +490,8 @@ export class door extends AnimatedPhysicsObject {
         this.use = 'none';
         this._openAction = null;
         this._closeAction = null;
+        this._openAudio = null;
+        this._closeAudio = null;
     }
     setId(id) {
         this.identity = id;
@@ -509,8 +511,8 @@ export class door extends AnimatedPhysicsObject {
         }
         const openposKF = new THREE.KeyframeTrack('door.position', times, openvalues);
         const closeposKF = new THREE.KeyframeTrack('door.position', times, closevalues);
-        const openscaleKF = new THREE.KeyframeTrack('door.scale',times,[1,1,1,0,1,1]);
-        const closescaleKF = new THREE.KeyframeTrack('door.scale',times,[0,1,1,1,1,1]);
+        const openscaleKF = new THREE.KeyframeTrack('door.scale',times,[1,1,1,0.01,1,1]);
+        const closescaleKF = new THREE.KeyframeTrack('door.scale',times,[0.01,1,1,1,1,1]);
         const open = new THREE.AnimationClip("open", 1, [openposKF, openscaleKF]);
         const close = new THREE.AnimationClip("close", 1, [closeposKF, closescaleKF]);
         this._openAction = mixer.clipAction(open);
@@ -520,15 +522,42 @@ export class door extends AnimatedPhysicsObject {
         this._closeAction.clampWhenFinished = true;
         this._closeAction.loop = THREE.LoopOnce;
     }
-    
+
+    setAudio(listener){
+        const onaudio = new THREE.PositionalAudio( listener );
+        const audioLoader = new THREE.AudioLoader();
+        this.add(onaudio);
+        this._openAudio = onaudio;
+        audioLoader.load('/open.wav', function(audioBuffer){
+            onaudio.setBuffer(audioBuffer);
+            onaudio.setLoop(false);
+            onaudio.setVolume(0.9);
+            onaudio.setRefDistance(20);
+            // console.log(onaudio);
+        })
+        const offaudio = new THREE.PositionalAudio( listener );
+        this.add(offaudio);
+        this._closeAudio = offaudio;
+        audioLoader.load('/close.wav', function(audioBuffer){
+            offaudio.setBuffer(audioBuffer);
+            offaudio.setLoop(false);
+            offaudio.setVolume(0.9);
+            offaudio.setRefDistance(20);
+        })
+        return [onaudio, offaudio];
+    }
     onActivate(){
         this._closeAction.stop();
+        this._closeAudio.stop();
         this._openAction.play();
+        this._openAudio.play();
         this.world.removeBody(this.body);
     }
 
     onDeactivate(){
+        this._openAudio.stop();
         this._openAction.stop();
+        this._closeAudio.play();
         this._closeAction.play();
         this.world.addBody(this.body);
     }
@@ -570,6 +599,7 @@ export class goal extends PhysicsObject {
         this.use = 'none';
         this.Action = null;
         this._update = false;
+        this._audio = null;
     }
     setId(id) {
         this.identity = id;
@@ -599,15 +629,29 @@ export class goal extends PhysicsObject {
         console.log('animation ready')
         return mixer;
     }
+    setAudio(listener){                                                     //!While merging: add this to set Audio
+        const audio = new THREE.PositionalAudio( listener );
+        this.add(audio);
+        this._audio = audio;
+        const audioLoader = new THREE.AudioLoader();
+        audioLoader.load('/goal.wav', function(audioBuffer){
+            audio.setBuffer(audioBuffer);
+            audio.setLoop(false);
+            audio.setVolume(0.9);
+            audio.setRefDistance(20);
+        })
+        return audio;
+    }
     update(delta){
         if(this._update){
-            this.children[1].material.update( delta )
+            this.children[2].material.update( delta )
         }
     }
 
     async onReach(){
         console.log(this.Action)
         this.Action.play();
+        this._audio.play();
         await sleep(4000);
         var fireRadius = 0.03;
         var fireHeight = 0.6;
@@ -619,6 +663,8 @@ export class goal extends PhysicsObject {
         particleFireMesh0.position.set(0,0.1,0);
         this.add( particleFireMesh0 );
         this._update = true;
+        const passevent = new Event('pass')
+        document.dispatchEvent(passevent)
     }
 }
     

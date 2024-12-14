@@ -1,0 +1,105 @@
+body { 
+    margin: 0; 
+    overflow: hidden; /* Prevent scrolling */
+}
+#cross {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    pointer-events: none; /* Make the cross non-interactive */
+}
+#cross .horizontal {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: white;
+    transform: translateY(-50%);
+}
+#cross .vertical {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: white;
+    transform: translateX(-50%);
+}
+html, body {
+margin: 0;
+height: 100%;
+}
+#c {
+width: 100%;
+height: 100%;
+display: block;
+}
+.split {
+position: absolute;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+display: flex;
+}
+.split>div {
+width: 100%;
+height: 100%;
+}
+.container{
+    width: 100%;
+    height:100%;
+    position: relative;
+    /* margin: 20px; */
+}
+.box{
+    width: 100%;
+    height: 100%;            
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 1;  /* for demo purpose  */
+}
+.stack-top{
+    z-index: 9;
+    background-color: black;
+    /* margin: 20px; */
+}
+.cover{
+    width:70%;
+    height:70%;
+    position: relative;
+    left: 50%;
+    transform:translate(-50%, 0);
+}
+
+.background {
+    background-image: url('/background.jpg'); /* Replace with your image path */
+    width: 100%;
+    height: 100%;
+    background-size: cover;           
+  }
+
+  .grid {
+    height:70%;
+    top:50%;
+    left:50%;
+    transform:translate(5%, 50%);
+  }
+
+  .card_bg1 {
+    background-image: url('/level1_card_bg.jpg');
+  }
+
+  .card_bg2 {
+    background-image: url('/level2_card_bg.jpg');
+  }
+
+  .title {
+    width:80%;
+    height:60%;
+  }

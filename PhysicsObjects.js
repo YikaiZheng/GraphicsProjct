@@ -333,4 +333,7 @@ export class PlayerObject extends PhysicsObject {
         super.addToScene();
         this.scene.add(this);
     }
+    addSoundEffect(listener){
+        this.camera.add(listener);
+    }
 }
