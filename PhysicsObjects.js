@@ -63,13 +63,13 @@ export class PlayerObject extends PhysicsObject {
         const mesh_Geo = new THREE.BoxGeometry(boxSize.x, boxSize.y, boxSize.z);
         const mesh_Mat = new THREE.MeshBasicMaterial({
             color: 0x0000ff,  // Set the color of the material
-            opacity: 0.2,     // Set opacity (0 = fully transparent, 1 = fully opaque)
+            opacity: 0,     // Set opacity (0 = fully transparent, 1 = fully opaque)
             transparent: true // Enable transparency
         });
         super(mesh_Geo, mesh_Mat, body_player, scene, world);
         
-        // this.init_camera_offset = new THREE.Vector3(0, 0.7, -0.3);
-        this.init_camera_offset = new THREE.Vector3(0, 1.2, 1.5);
+        this.init_camera_offset = new THREE.Vector3(0, 0.7, -0.3);
+        // this.init_camera_offset = new THREE.Vector3(0, 1.2, 1.5);
         this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
         this.camera.position.set(position.x, position.y, position.z);
         this.camera.position.add(this.init_camera_offset);
@@ -137,6 +137,13 @@ export class PlayerObject extends PhysicsObject {
         if(this.done_load_model) {
             const tot_frame = 340;
             const fpm = 24 * this.playspeed;
+            // console.log("delta0", delta);
+            // if(delta*fpm > tot_frame + this.end_frame - this.start_frame) {
+            //     var times = (delta*fpm/(this.end_frame - this.start_frame));
+            //     times = Math.floor(times);
+            //     delta -= times * ((this.end_frame - this.start_frame) / fpm);
+            // }
+            // console.log("delta1", delta);
             var delta_new = delta;
             this.animation_time += delta;
             // console.log("animation_time", this.animation_time*24);
@@ -145,8 +152,13 @@ export class PlayerObject extends PhysicsObject {
                     this.jumping = false;
                 }
                 else {
+                    var times = ((this.animation_time*fpm - this.end_frame)/(this.end_frame - this.start_frame));
+                    times = Math.floor(times);
+                    // console.log("times", times);
                     delta_new += (tot_frame - this.end_frame + this.start_frame) / fpm;
+                    delta_new -= times * ((this.end_frame - this.start_frame) / fpm);
                     this.animation_time += (this.start_frame - this.end_frame) / fpm;
+                    this.animation_time -= times * ((this.end_frame - this.start_frame) / fpm);
                 }
             }
             // console.log("update_mixer", delta_new);
@@ -202,7 +214,7 @@ export class PlayerObject extends PhysicsObject {
         // const facing_direction = this.facing_direction.clone();
         // facing_direction.multiplyScalar(3);
         // this.attached_offset.push(facing_direction);
-        this.attached_offset.push(new THREE.Vector3(0, 0, -this.attached_distance));
+        this.attached_offset.push(new THREE.Vector3(0.5, 0, -this.attached_distance));
         this.attached_abletoPlace.push(true);
     }
 

@@ -9,13 +9,14 @@ particleFire.install( { THREE: THREE } );
 const _event = {type:''}
 
 export class connector extends PhysicsObject {
-    constructor(loader, dashgroup, lasergroup, scene, world, position, quaternion){
+    constructor(loader, dashgroup, lasergroup, scene, world, position, quaternion, material_CANNON){
         const size = {t:0.2, b:0.5, h:1.5};
         const geometry = new THREE.CylinderGeometry(size.t, size.b, size.h);
         const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
         const cylinderShape = new CANNON.Cylinder(size.t, size.b, size.h);
         const cylinderBody = new CANNON.Body({
           mass: 1,
+          material: material_CANNON,
           position: new CANNON.Vec3(position.x, position.y, position.z),
           quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
           shape: cylinderShape,
@@ -228,13 +229,14 @@ export class connector extends PhysicsObject {
 
 
 export class cube extends PhysicsObject {
-    constructor(scene, world, position, quaternion){
-        const cubeSize = { x: 0.8, y: 0.8, z: 0.8 };
+    constructor(scene, world, position, quaternion, material_CANNON){
+        const cubeSize = { x: 1.6, y: 0.8, z: 1.6 };
         const cubeGeo = new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z)
         const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' })
         const cube_Shape = new CANNON.Box(new CANNON.Vec3(cubeSize.x / 2, cubeSize.y / 2, cubeSize.z / 2));
         const cube_Body = new CANNON.Body({
             shape: cube_Shape,
+            material: material_CANNON,
             position: new CANNON.Vec3(position.x, position.y, position.z),
             quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
             mass: 1,

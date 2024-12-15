@@ -4,18 +4,23 @@ import { PhysicsObject } from './PhysicsObjects'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 class PlayerInterface {
-    constructor(player, world, toolsgroup) {
+    constructor(player, world, toolsgroup, running) {
         this.world = world;
         this.player = player;
         this.toolsgroup = toolsgroup;
-        this.isMouselocked = false;
+        // this.isMouselocked = false;
+        this.running = running;
 
         // Element to enable pointer lock (e.g., the entire document body)
         const element = document.body;
 
         // Request Pointer Lock on Click
         element.addEventListener('click', () => {
-            if(!this.isMouselocked) {
+            console.log(this.running.isinLevel);
+            console.log((!this.running.isPaused));
+            console.log((!this.running.isMouseLocked));
+            if(this.running.isinLevel && (!this.running.isPaused) && (!this.running.isMouseLocked)) {
+                console.log("requestPointerLock");
                 element.requestPointerLock();
             }
         });
@@ -24,14 +29,42 @@ class PlayerInterface {
         document.addEventListener('pointerlockchange', () => {
             if (document.pointerLockElement === element) {
                 console.log("Pointer lock enabled");
-                this.isMouselocked = true;
+                this.running.isMouseLocked = true;
             } else {
                 console.log("Pointer lock disabled");
-                this.isMouselocked = false;
+                this.running.isMouseLocked = false;
             }
         });
 
         window.addEventListener('resize', () => {
+            player.camera.aspect = window.innerWidth / window.innerHeight;
+            player.camera.updateProjectionMatrix();
+        });
+    }
+
+    cleanup() {
+        // Element to enable pointer lock (e.g., the entire document body)
+        const element = document.body;
+
+        // Request Pointer Lock on Click
+        element.removeEventListener('click', () => {
+            if(this.running.inLevel && (!this.running.isPaused) && (!this.running.isMouseLocked)) {
+                element.requestPointerLock();
+            }
+        });
+
+        // Listen for Pointer Lock Changes
+        document.removeEventListener('pointerlockchange', () => {
+            if (document.pointerLockElement === element) {
+                console.log("Pointer lock enabled");
+                this.running.isMouseLocked = true;
+            } else {
+                console.log("Pointer lock disabled");
+                this.running.isMouseLocked = false;
+            }
+        });
+
+        window.removeEventListener('resize', () => {
             player.camera.aspect = window.innerWidth / window.innerHeight;
             player.camera.updateProjectionMatrix();
         });
@@ -63,10 +96,10 @@ class PlayerInterface {
 }
 
 export class PlayerControl_KeyMouse {
-    constructor(player, world, toolsgroup) {
+    constructor(player, world, toolsgroup, running) {
         this.world = world;
         this.player = player;
-        this.interface = new PlayerInterface(player, world, toolsgroup);
+        this.interface = new PlayerInterface(player, world, toolsgroup, running);
         // Track Keyboard Input
         this.key_state = {}; // Object to store key states
         this.key_down = {}; // Object to store key states
@@ -80,7 +113,7 @@ export class PlayerControl_KeyMouse {
         const element = document.body;
 
         document.addEventListener('keydown', (event) => {
-            if(this.interface.isMouselocked) {
+            if(this.interface.running.isMouseLocked) {
                 if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
                     this.key_state[event.key] = true; // Mark key as pressed
                     this.key_down[event.key] = true; // Mark key as pressed
@@ -89,7 +122,7 @@ export class PlayerControl_KeyMouse {
             }
         });
         document.addEventListener('keyup', (event) => {
-            if(this.interface.isMouselocked) {
+            if(this.interface.running.isMouseLocked) {
                 if(this.key_state[event.key] == true) {
                     this.key_state[event.key] = false; // Mark key as released
                     this.key_up[event.key] = true; // Mark key as released
@@ -102,7 +135,7 @@ export class PlayerControl_KeyMouse {
             if (document.pointerLockElement === element) {
                 console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
                 // Use event.movementX and event.movementY for smooth movement tracking
-                if (this.interface.isMouselocked) {
+                if (this.interface.running.isMouseLocked) {
                     this.mouse_deltaX += event.movementX;
                     this.mouse_deltaY += event.movementY;
                 }
@@ -111,7 +144,7 @@ export class PlayerControl_KeyMouse {
         
         // Track Mouse Clicks
         document.addEventListener('mousedown', (event) => {
-            if (this.interface.isMouselocked) {
+            if (this.interface.running.isMouseLocked) {
                 console.log(`Mouse button pressed: ${event.button}`); 
                 if (event.button == 0) {
                     this.isMouseLeftDown = true;
@@ -120,7 +153,7 @@ export class PlayerControl_KeyMouse {
             }
         });
         document.addEventListener('mouseup', (event) => {
-            if (this.interface.isMouselocked) {
+            if (this.interface.running.isMouseLocked) {
                 console.log(`Mouse button released: ${event.button}`);
                 if (event.button == 0) {
                     this.isMouseLeftDown = false;
@@ -128,6 +161,65 @@ export class PlayerControl_KeyMouse {
             }
         });
         document.addEventListener('wheel', (event) => {
+            if (document.pointerLockElement === element) {
+                event.preventDefault(); // Optional: Prevent page scrolling
+                console.log(`Mouse wheel scrolled: deltaY=${event.deltaY}`);
+            } 
+        }, { passive: false }); // Passive must be false for preventDefault
+    }
+
+    cleanup() {
+        const element = document.body;
+
+        document.removeEventListener('keydown', (event) => {
+            if(this.interface.running.isMouseLocked) {
+                if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
+                    this.key_state[event.key] = true; // Mark key as pressed
+                    this.key_down[event.key] = true; // Mark key as pressed
+                    console.log(`Key pressed: ${event.key}`);
+                }
+            }
+        });
+        document.removeEventListener('keyup', (event) => {
+            if(this.interface.running.isMouseLocked) {
+                if(this.key_state[event.key] == true) {
+                    this.key_state[event.key] = false; // Mark key as released
+                    this.key_up[event.key] = true; // Mark key as released
+                    console.log(`Key released: ${event.key}`);
+                }
+            }
+        });
+
+        document.removeEventListener('mousemove', (event) => {
+            if (document.pointerLockElement === element) {
+                console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
+                // Use event.movementX and event.movementY for smooth movement tracking
+                if (this.interface.running.isMouseLocked) {
+                    this.mouse_deltaX += event.movementX;
+                    this.mouse_deltaY += event.movementY;
+                }
+            }
+        });
+        
+        // Track Mouse Clicks
+        document.removeEventListener('mousedown', (event) => {
+            if (this.interface.running.isMouseLocked) {
+                console.log(`Mouse button pressed: ${event.button}`); 
+                if (event.button == 0) {
+                    this.isMouseLeftDown = true;
+                    this.interface.click1();
+                }
+            }
+        });
+        document.removeEventListener('mouseup', (event) => {
+            if (this.interface.running.isMouseLocked) {
+                console.log(`Mouse button released: ${event.button}`);
+                if (event.button == 0) {
+                    this.isMouseLeftDown = false;
+                }
+            }
+        });
+        document.removeEventListener('wheel', (event) => {
             if (document.pointerLockElement === element) {
                 event.preventDefault(); // Optional: Prevent page scrolling
                 console.log(`Mouse wheel scrolled: deltaY=${event.deltaY}`);
@@ -201,10 +293,10 @@ function getGamepad(idx) {
 }
 
 export class PlayerControl_Joystick {
-    constructor(player, world, toolsgroup) {
+    constructor(player, world, toolsgroup, running) {
         this.world = world;
         this.player = player;
-        this.interface = new PlayerInterface(player, world, toolsgroup);
+        this.interface = new PlayerInterface(player, world, toolsgroup, running);
         this.joystick = getGamepad();
         this.stick_index = -1;
         this.button_size = 0;

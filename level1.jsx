@@ -27,7 +27,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-import { FirstPage } from '@mui/icons-material';
+import { FirstPage, Man } from '@mui/icons-material';
 import Grid from '@mui/material/Grid';
 import Slider from '@mui/material/Slider';
 import MuiInput from '@mui/material/Input';
@@ -97,6 +97,17 @@ function InputSlider(props) {
   }
   
 
+class Running {
+    constructor() {
+        this.manualOpen = true;
+        this.isinLevel = false;
+        this.isPaused = false;
+        this.isMouseLocked = false;
+    }
+}
+
+var running_global = new Running();
+
 export default function Level1(){
     const [loading,setLoading] = useState(true);
     const navigate = useNavigate();
@@ -107,13 +118,15 @@ export default function Level1(){
     const [passed, setPassed] = useState(false);
     const [manualOpen, setManualOpen] = useState(true);
     const [settings, setSettings] = useState({fov:75,bgmVolume:0.5,soundVolume:0.9})
+    
+    running_global.isPaused = paused;
     // const ref = useRef(null);
     useEffect(()=>{
         setLoading(true);
         async function ready(){
-        await init().then((ret=>setConf(ret)));
-        console.log('set loading to false')
-        setLoading(false);
+            await init(running_global).then((ret=>setConf(ret)));
+            console.log('set loading to false')
+            setLoading(false);
         };
         ready();
         document.addEventListener('pass',event=>{setPassed(true)})
@@ -146,6 +159,7 @@ export default function Level1(){
     }
 
     const handleBackToMenu =()=>{
+        running_global.isinLevel = false;
         destroy(conf);
         const element = document.getElementById("level1");
         element.remove();
@@ -242,9 +256,15 @@ export default function Level1(){
                 但记住，程序只是人类为你设定的前传，去这个世界里自由探索吧，如何写你的故事，由你决定。
             </Typography>
             </Box>
-            <Button color ='inherit' variant='contained' onClick = {()=>setManualOpen(false) }>启程</Button>
+            <Button color ='inherit' variant='contained' onClick = {()=>{
+                running_global.manualOpen = false;
+                running_global.isinLevel = true;
+                setManualOpen(false) 
+            }}>启程</Button>
         </Dialog>}
-        <Dialog open={paused} onClose={()=>setPaused(false)}>
+        <Dialog open={paused} onClose={()=>{
+            setPaused(false);
+        }}>
             <DialogTitle><Typography variant="h6" align="center">暂停</Typography></DialogTitle>
             <List sx={{ pt: 0 }}>
                     <ListItem>
@@ -297,7 +317,7 @@ function sleep (time) {
     return new Promise((resolve) => setTimeout(resolve, time));
 }
 
-async function init(){
+async function init(running){
     navigator.mediaDevices.getUserMedia({ audio: true });
 
     var world = new CANNON.World();
@@ -403,13 +423,16 @@ async function init(){
     const lasers = new RaysGroup();
     var sounds = [];
 
+    const Material1 = new CANNON.Material("Material1");
+    const Material2 = new CANNON.Material("Material2");
+
     const connector1 = new connector(gltfLoader, dashes, lasers, scene, world, 
-                    {x:2, y:0.75, z:2}, {x:0, y:0, z:0, w:1});
+                    {x:2, y:0.75, z:2}, {x:0, y:0, z:0, w:1}, Material1);
     // connector1.position.set(2,0.75,2);
     const connector2 = new connector(gltfLoader, dashes, lasers, scene, world, 
-                    {x:6, y:0.75, z:-2}, {x:0, y:0, z:0, w:1});
+                    {x:6, y:0.75, z:-2}, {x:0, y:0, z:0, w:1}, Material1);
     // connector2.position.set(6,0.75,-2);
-    const cube1 = new cube(scene, world, {x:2, y:0.4, z:-6}, {x:0, y:0, z:0, w:1});
+    const cube1 = new cube(scene, world, {x:2, y:0.4, z:-6}, {x:0, y:0, z:0, w:1}, Material2);
     // cube1.position.set(2,0.4,-6);
     const goal0 = new goal(gltfLoader, scene, world, {x:9, y:1, z:-0.5}, {x:0, y:0, z:0, w:1});
     // goal0.position.set(9,1,-0.5);
@@ -451,6 +474,13 @@ async function init(){
     // receiver3.position.set(2,1.2,-4.8);
     // receiver3.rotation.x = Math.PI/2;
 
+    const contactMaterial = new CANNON.ContactMaterial(Material1, Material2, {
+        friction: 2, // Adjust this value (0 is no friction, higher values increase friction)
+        // restitution: 0.3, // Optional, defines the bounciness
+    });
+
+    world.addContactMaterial(contactMaterial);
+
     tools.add(connector1);
     // connector1.addToWorldScene(world, scene);
     tools.add(connector2);
@@ -474,7 +504,7 @@ async function init(){
     scene.add(lasers);
 
     // var player1_Control = new PlayerControl_Joystick(player1, world, tools);
-    var player1_Control = new PlayerControl_KeyMouse(player1, world, tools);
+    var player1_Control = new PlayerControl_KeyMouse(player1, world, tools, running);
 
     var fixedTimeStep = 1.0 / 60.0; // seconds
     var maxSubSteps = 3;
@@ -489,21 +519,24 @@ async function init(){
     });
 
     function animate() {
-        const delta = clock.getDelta();
-        world.step(fixedTimeStep, delta, maxSubSteps);
-        // firstPersonControl.update(delta);
-        player1_Control.update();
-        player1.sync();
-        tools.sync();
-        boundary_1.sync();
-        dashes.update();
-        lasers.update();
-        goal0.update(delta);
-        for(var mixer of mixers){
-            mixer.update(delta);
+        if(running.isinLevel && running.isMouseLocked && (!running.isPaused)) {
+            const delta = clock.getDelta();
+            // console.log("delta", delta);
+            world.step(fixedTimeStep, delta, maxSubSteps);
+            // firstPersonControl.update(delta);
+            player1_Control.update();
+            player1.sync();
+            tools.sync();
+            boundary_1.sync();
+            dashes.update();
+            lasers.update();
+            goal0.update(delta);
+            for(var mixer of mixers){
+                mixer.update(delta);
+            }
+            player1.update_mixer(delta);
+            // robotmixer.update(delta*2);
         }
-        player1.update_mixer(delta);
-        // robotmixer.update(delta*2);
         renderer.render( scene, player1.camera );
     }
 
@@ -517,7 +550,10 @@ async function init(){
         const warning = WebGL.getWebGL2ErrorMessage();
         document.getElementById( 'container' ).appendChild( warning );
     }
-    await sleep(10000);
+    await sleep(3000);
+    if(!running.manualOpen) {
+        running.isinLevel = true;
+    }
     return {scene:scene,renderer:renderer,control:player1_Control,tools:tools,bgm:bgm, camera:player1.camera, sounds:sounds};
 }
 
