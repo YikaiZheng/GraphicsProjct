@@ -130,22 +130,24 @@ export class connector extends PhysicsObject {
                 this.children[0].children[0].material.emissive = new THREE.Color(color);
             }
             this.children[0].children[0].material.needsUpdate = true;
-            this.lasergroup.deletestartingLaser(this);
-            if(color!=0x000000){
-                for(var object of this._connected){
-                    var source = false;
-                    for(var src of this._source){
-                        if(src.identity === object.identity){
-                            source = true;
+            if(this._color!=color){
+                this.lasergroup.deletestartingLaser(this);
+                if(color!=0x000000){
+                    for(var object of this._connected){
+                        var source = false;
+                        for(var src of this._source){
+                            if(src.identity === object.identity){
+                                source = true;
+                            }
+                        }
+                        if(!source && object.use!='emit' && !object._attached){
+                            console.log('onreceive addlaser')
+                            this.lasergroup.addLaser(color,this,object);
                         }
                     }
-                    if(!source){
-                        console.log('onreceive addlaser')
-                        this.lasergroup.addLaser(color,this,object);
-                    }
                 }
+                this._color = color;
             }
-            this._color = color;
         }                                //when receive a laserBeam, recompute color and send laserBeam to objects not in sourcelist.
     }
     
@@ -165,22 +167,30 @@ export class connector extends PhysicsObject {
                 this.children[0].children[0].material.emissive = new THREE.Color(color);
             }
             this.children[0].children[0].material.needsUpdate = true;
-            this.lasergroup.deletestartingLaser(this);
-            if(color!=0x000000){
-                for(var object of this._connected){
-                    var source = false;
-                    for(var src of this._source){
-                        if(src.identity === object.identity){
-                            source = true;
+            if(this._color!=color){
+                this.lasergroup.deletestartingLaser(this);
+                if(color!=0x000000){
+                    for(var object of this._connected){
+                        var source = false;
+                        for(var src of this._source){
+                            if(src.identity === object.identity){
+                                source = true;
+                            }
+                        }
+                        if(!source && object.use!='emit' && !object._attached){
+                            console.log('onbreak addlaser')
+                            this.lasergroup.addLaser(color,this,object);
                         }
                     }
-                    if(!source && object.use!='emit' && !object._attached){
-                        console.log('onbreak addlaser')
-                        this.lasergroup.addLaser(color,this,object);
-                    }
+                }
+
+                this._color = color;
+            }
+            else{
+                if(this.sourceobject.click.includes('pick')&&!this.sourceobject._attached){
+                    this.lasergroup.addLaser(color,this,sourceobject)
                 }
             }
-            this._color = color;
         }
     }
     
@@ -227,13 +237,74 @@ export class connector extends PhysicsObject {
     }
 }
 
+export class wall extends PhysicsObject {
+    constructor(scene, world, mesh){
+        console.log(mesh)
+        const wallGeo = mesh.geometry;
+        const wallMat = mesh.material;
+        const position = mesh.position;
+        const quaternion = mesh.quaternion;
+        const cubeSizex = wallGeo.boundingBox.max.x * mesh.scale.x
+        const cubeSizey = wallGeo.boundingBox.max.y * mesh.scale.y
+        const cubeSizez = wallGeo.boundingBox.max.z * mesh.scale.z
+        const wall_Shape = new CANNON.Box(new CANNON.Vec3(cubeSizex, cubeSizey, cubeSizez));
+        console.log(wall_Shape)
+        const wall_Body = new CANNON.Body({
+            shape: wall_Shape,
+            position: new CANNON.Vec3(position.x, position.y, position.z),
+            quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+            mass: 0,
+        })
+        super(wallGeo,wallMat, wall_Body, scene, world);
+        this.position.copy(position)
+        this.quaternion.copy(quaternion)
+        this.scale.copy(mesh.scale);
+        this.identity=0;
+        this.click = ['none'];
+        this.use = 'none';
+    }
+    setId(id) {
+        this.identity = id;
+    }
+}
+
+export class fence extends PhysicsObject {
+    constructor(scene, world, mesh){
+        console.log(mesh)
+        const wallGeo = mesh.geometry;
+        const wallMat = mesh.material;
+        const position = mesh.position;
+        const quaternion = mesh.quaternion;
+        const cubeSizex = wallGeo.boundingBox.max.x * mesh.scale.x
+        const cubeSizey = wallGeo.boundingBox.max.y * mesh.scale.y
+        const cubeSizez = wallGeo.boundingBox.max.z * mesh.scale.z + 0.05
+        const wall_Shape = new CANNON.Box(new CANNON.Vec3(cubeSizex, cubeSizey +5, cubeSizez));
+        console.log(wall_Shape)
+        const wall_Body = new CANNON.Body({
+            shape: wall_Shape,
+            position: new CANNON.Vec3(position.x, position.y, position.z),
+            quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+            mass: 0,
+        })
+        super(wallGeo,wallMat, wall_Body, scene, world);
+        this.scale.copy(mesh.scale);
+        this.identity=0;
+        this.click = ['none'];
+        this.use = 'none';
+    }
+    setId(id) {
+        this.identity = id;
+    }
+}
+
+
 
 export class cube extends PhysicsObject {
-    constructor(scene, world, position, quaternion, material_CANNON){
-        const cubeSize = { x: 1.6, y: 0.8, z: 1.6 };
+    constructor(scene, world, position, quaternion,loader,material_CANNON){
+        const cubeSize = { x: 0.8, y: 0.8, z: 0.8 };      
         const cubeGeo = new THREE.BoxGeometry(cubeSize.x, cubeSize.y, cubeSize.z)
         const cubeMat = new THREE.MeshPhongMaterial({ color: '#8f4b2e' })
-        const cube_Shape = new CANNON.Box(new CANNON.Vec3(cubeSize.x / 2, cubeSize.y / 2, cubeSize.z / 2));
+        const cube_Shape = new CANNON.Box(new CANNON.Vec3(cubeSize.x / 2 * 1.5, cubeSize.y / 2 * 1, cubeSize.z / 2 * 1.5));
         const cube_Body = new CANNON.Body({
             shape: cube_Shape,
             material: material_CANNON,
@@ -242,7 +313,21 @@ export class cube extends PhysicsObject {
             mass: 1,
         })
         super(cubeGeo, cubeMat, cube_Body, scene, world);
-        
+        const layer = new THREE.Layers();
+        layer.set(1);
+        this.layers = layer;
+        const url = 'cube.glb'
+        loader.load(url, (gltf) => {
+            const root = gltf.scene;
+            this.add(root);
+            const layer = new THREE.Layers();
+            layer.set(2);
+            for(var object of root.children){
+                object.layers = layer;
+            }
+            // console.log(root)
+        })
+        this.scale.set(1.5,1,1.5)
         this.idendity = 0;
         this.click = ['pick'];
         this.use = 'none';
@@ -672,4 +757,142 @@ export class goal extends PhysicsObject {
     
 function sleep (time) {
     return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+export class plate extends AnimatedPhysicsObject {
+    constructor(scene,world,position,quaternion,loader,color){
+        const geometry = new THREE.BoxGeometry(2,0.4,2);
+        const Mat = new THREE.MeshPhongMaterial({ color: '#ffffff' });
+        const plateShape = new CANNON.Box(new CANNON.Vec3(1,0.2,1))
+        const plateBody = new CANNON.Body({
+            shape: plateShape,
+            position: new CANNON.Vec3(position.x, position.y, position.z),
+            quaternion: new CANNON.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w),
+            mass: 0,
+        })
+        super(geometry,Mat,plateBody,scene,world)
+        this.position.set(position.x, position.y, position.z)
+        this._Action
+        this.identity = 0;
+        const url = '/platform.glb'
+        const layer = new THREE.Layers();
+        layer.set(1);
+        this.layers = layer;
+        loader.load(url, (gltf) => {
+            const root = gltf.scene;
+            this.add(root);
+            const layer = new THREE.Layers();
+            layer.set(2);
+            for(var object of root.children){
+                object.layers = layer;
+            }
+            console.log(root)
+        })
+        this.click = 'connect';
+        this.use = 'receive';
+        this.color = color
+        this._sourcelist = [];
+        this.connectposition = new THREE.Vector3(0,0.2,0);
+        this._Action = null;
+        this._startAudio = null;
+        this._stopAudio = null;
+        this.name = "plate"
+    }
+    setId(id) {
+        this.identity = id;
+    }
+    setAnimation(mixer, time, startposition, endposition) {
+        const times = [0,time,time+1,2*time+1,2*time+2]
+        const pos = [startposition.x,startposition.y,startposition.z,endposition.x,endposition.y,endposition.z,endposition.x,endposition.y,endposition.z,
+            startposition.x,startposition.y,startposition.z, startposition.x,startposition.y,startposition.z]
+        const posKF = new THREE.KeyframeTrack("plate.position",times,pos)
+        const clip = new THREE.AnimationClip('clip',2*time+2,[posKF])
+        this._Action = mixer.clipAction(clip)
+    }
+
+    setAudio(listener){
+        const onaudio = new THREE.PositionalAudio( listener );
+        const audioLoader = new THREE.AudioLoader();
+        this.add(onaudio);
+        this._startAudio = onaudio;
+        audioLoader.load('/open.wav', function(audioBuffer){
+            onaudio.setBuffer(audioBuffer);
+            onaudio.setLoop(false);
+            onaudio.setVolume(0.9);
+            onaudio.setRefDistance(20);
+            // console.log(onaudio);
+        })
+        const offaudio = new THREE.PositionalAudio( listener );
+        this.add(offaudio);
+        this._stopAudio = offaudio;
+        audioLoader.load('/close.wav', function(audioBuffer){
+            offaudio.setBuffer(audioBuffer);
+            offaudio.setLoop(false);
+            offaudio.setVolume(0.9);
+            offaudio.setRefDistance(20);
+        })
+        return [onaudio, offaudio];
+    }
+
+    onMouseover(){
+        const color3 = new THREE.Color(0x444444);
+        // for(var i=0;i<=12;i++){                               //TODO: Add highlight
+        //     const object = this.children[0].children[i];
+        //     object.material.emissive = color3;
+        //     object.material.needsUpdate = true;
+        // }
+        // const object = this.children[0].children[14];
+        // object.material.emissive = color3;
+        // object.material.needsUpdate = true;
+    }
+    onMouseout(){
+        const color3 = new THREE.Color(0x000000);
+        // for(var i=0;i<=12;i++){
+        //     const object = this.children[0].children[i];
+        //     object.material.emissive = color3;
+        //     object.material.needsUpdate = true;
+        // }
+        // const object = this.children[0].children[14];
+        // object.material.emissive = color3;
+        // object.material.needsUpdate = true;
+    }
+
+    onReceive(sourceobject, color){
+        if(color===this.color){
+            if(this._sourcelist.length === 0){                            //TODO: Can we lock the object on the plate?
+                // _event.type = 'activate'
+                // this.targetobject.dispatchEvent(_event);
+                if (this._Action.paused) {
+                    // 如果是播放状态，设置为暂停状态
+                    this._Action.paused = false;
+                }
+                else{
+                    this._Action.play()
+                }
+                this._startAudio.play();
+                this._stopAudio.stop();
+                console.log('receiver activated')
+            }
+            this._sourcelist.push(sourceobject);
+        }
+    }
+
+    onBreak(sourceobject, color){
+        if(color===this.color){
+            for(var object of this._sourcelist){
+                if(object.identity===sourceobject.identity){
+                    const index = this._sourcelist.indexOf(object);
+                    this._sourcelist.splice(index, 1);
+                    break;
+                }
+            }
+            if(this._sourcelist.length===0){
+                // _event.type = 'deactivate'
+                // this.targetobject.dispatchEvent(_event);
+                this._Action.paused = true;
+                this._startAudio.stop();
+                this._stopAudio.play();
+            }
+        }
+    }
 }

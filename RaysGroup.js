@@ -145,6 +145,7 @@ export class LaserBeam extends THREE.Mesh{
             // _event.color = this.color;
             // _event.sourceobject = this.startobject;
             // this.endobject.dispatchEvent(_event);
+            console.log(this.endobject)
             this.endobject.onReceive(this.startobject, this.color);
         }
         if(intersectobject.identity != this.endobject.identity && this._intersectobject.identity===this.endobject.identity){        //If cannot reach endobject, disconnected

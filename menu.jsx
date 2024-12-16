@@ -79,19 +79,21 @@ export default function Menu(){
                 <Card sx={{ maxWidth: 400 , boxShadow:10}}>
                 <CardMedia
                     sx={{ height: 300 }}
-                    image="/level2img.png"
+                    image="/level3img.png"
                 />
+                <div className='card_bg3'>
                 <CardContent>
                     <Typography gutterBottom variant="h5" component="div">
                     第三关
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    未尽
+                    共破轮回
                     </Typography>
                 </CardContent>
                 <CardActions>
                     <Button color='grey' variant='contained' size="small" onClick={()=>navigate('/level3')}>进入</Button>
                 </CardActions>
+                </div>
                 </Card>
             </Grid>
             </Grid>

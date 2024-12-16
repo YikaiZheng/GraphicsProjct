@@ -99,6 +99,10 @@ height: 100%;
     background-image: url('/level2_card_bg.jpg');
   }
 
+  .card_bg3 {
+    background-image: url('/level3_card_bg.jpg');
+  }
+
   .title {
     width:80%;
     height:60%;

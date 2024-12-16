@@ -4,7 +4,7 @@ import WebGL from 'three/addons/capabilities/WebGL.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CameraControls } from './CameraControl';
 import { ToolsGroup } from './ToolsGroup';
-import { cube, connector, emittor, receiver, door, goal } from './InteractiveObjects'
+import { cube, connector, emittor, receiver, door, goal, plate, wall, fence } from './InteractiveObjects'
 import {Dash, DashesGroup, RaysGroup} from './RaysGroup';
 import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects';
 import { PlayerControl_KeyMouse, PlayerControl_Joystick } from './PlayerControl';
@@ -122,6 +122,7 @@ export default function Level1(){
     running_global.isPaused = paused;
     // const ref = useRef(null);
     useEffect(()=>{
+        if(window.location.pathname == '/level1'){
         setLoading(true);
         async function ready(){
             await init(running_global).then((ret=>setConf(ret)));
@@ -129,7 +130,8 @@ export default function Level1(){
             setLoading(false);
         };
         ready();
-        document.addEventListener('pass',event=>{setPassed(true)})
+        document.addEventListener('pass',event=>{setPaused(true);setPassed(true)})
+    }
     },[navigate,restart])
 
     const destroy = (conf)=>{
@@ -169,6 +171,7 @@ export default function Level1(){
     }
 
     const handleNext =()=>{
+        running_global.isinLevel = false;
         destroy(conf);
         const element = document.getElementById("level1");
         element.remove();
@@ -197,6 +200,10 @@ export default function Level1(){
     return(
         <ThemeProvider theme={darkTheme}>
         <div className ="container" id='content'>
+        <div id="cross">
+            <div className="horizontal"></div>
+            <div className="vertical"></div>
+        </div>
                 {loading && <div className="box stack-top">
                         <CssBaseline />
                         <Stack sx={{ width: '100%', height:'100%', color: 'grey.500' }} spacing={2}>
@@ -262,7 +269,7 @@ export default function Level1(){
                 setManualOpen(false) 
             }}>启程</Button>
         </Dialog>}
-        <Dialog open={paused} onClose={()=>{
+        <Dialog open={paused && ! passed} onClose={()=>{
             setPaused(false);
         }}>
             <DialogTitle><Typography variant="h6" align="center">暂停</Typography></DialogTitle>
@@ -302,7 +309,7 @@ export default function Level1(){
             <DialogTitle><Typography variant="h6" align="center">通关！</Typography></DialogTitle>
             <List sx={{ pt: 0 }}>
                     <ListItem>
-                        <Button color ='inherit' variant='contained' onClick = {handleNext} style={{maxWidth: '200px', maxHeight: '50px', minWidth: '200px', minHeight: '50px'}}>下一关</Button>
+                        <Button color ='inherit' variant='contained' onClick = {()=>{handleNext()}} style={{maxWidth: '200px', maxHeight: '50px', minWidth: '200px', minHeight: '50px'}}>下一关</Button>
                     </ListItem>
                     <ListItem>
                         <Button color ='inherit' variant='contained' onClick = {()=>{handleBackToMenu();setPassed(false)}} style={{maxWidth: '200px', maxHeight: '50px', minWidth: '200px', minHeight: '50px'}}>返回主菜单</Button>
@@ -366,7 +373,16 @@ async function init(running){
         var root = gltf.scene;
         root.castShadow = true;
         root.receiveShadow = true;
-        scene.add(root);
+        // scene.add(root); 
+        for(var i=0; i<15; i++){
+            if(i!=2){
+                tools.add(new wall(scene,world,root.children[i]));
+            }             //2 is the ground
+        }
+        const ground = root.children[2]
+        const tower = root.children[15]
+        scene.add(ground)
+        scene.add(tower)
     });
 
     const loader = new THREE.TextureLoader();
@@ -432,7 +448,7 @@ async function init(running){
     const connector2 = new connector(gltfLoader, dashes, lasers, scene, world, 
                     {x:6, y:0.75, z:-2}, {x:0, y:0, z:0, w:1}, Material1);
     // connector2.position.set(6,0.75,-2);
-    const cube1 = new cube(scene, world, {x:2, y:0.4, z:-6}, {x:0, y:0, z:0, w:1}, Material2);
+    const cube1 = new cube(scene, world, {x:2, y:0.4, z:-6}, {x:0, y:0, z:0, w:1},gltfLoader,Material2);
     // cube1.position.set(2,0.4,-6);
     const goal0 = new goal(gltfLoader, scene, world, {x:9, y:1, z:-0.5}, {x:0, y:0, z:0, w:1});
     // goal0.position.set(9,1,-0.5);
@@ -474,6 +490,12 @@ async function init(running){
     // receiver3.position.set(2,1.2,-4.8);
     // receiver3.rotation.x = Math.PI/2;
 
+    // const plate1 = new plate(scene,world,{x:0,y:0.5,z:0},{x:0, y:0, z:0, w:1},gltfLoader,0xff3333);
+    // const mixer4 = new THREE.AnimationMixer(plate1)
+    // plate1.setAnimation(mixer4,2,{x:0,y:0.5,z:0},{x:3,y:0.5,z:0})
+    // mixers.push(mixer4)
+    // sounds = sounds.concat(plate1.setAudio(listener));
+
     const contactMaterial = new CANNON.ContactMaterial(Material1, Material2, {
         friction: 2, // Adjust this value (0 is no friction, higher values increase friction)
         // restitution: 0.3, // Optional, defines the bounciness
@@ -494,6 +516,7 @@ async function init(running){
     tools.add(receiver1);
     tools.add(receiver2);
     tools.add(receiver3);
+    await sleep(3000);
 
     lasers.addintersectobjects(tools.children);
     // tools.listenToPointerEvents(renderer, player1.camera);
@@ -511,7 +534,7 @@ async function init(running){
 
     const bgm = new THREE.Audio(listener);
     var audioLoader = new THREE.AudioLoader();
-    audioLoader.load('bgm_level1.mp3', function(AudioBuffer) {
+    audioLoader.load('level1bgm.mp3', function(AudioBuffer) {
         bgm.setBuffer(AudioBuffer);
         bgm.setLoop(true);
         bgm.setVolume(0.5); 
