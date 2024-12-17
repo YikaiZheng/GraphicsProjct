@@ -362,6 +362,8 @@ async function init(running){
     // const canvas = document.querySelector('#level1');
     content.appendChild(canvas)
     const renderer = new THREE.WebGLRenderer({canvas: canvas});
+    // console.log(window.devicePixelRatio)
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize( window.innerWidth, window.innerHeight );
     window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -370,25 +372,42 @@ async function init(running){
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const gltfLoader = new GLTFLoader();
-    const url = '/level2.glb';
+    const url = '/level2/level2.gltf'; 
     gltfLoader.load(url, (gltf) => {
         var root = gltf.scene;
-        root.castShadow = true;
-        root.receiveShadow = true;
+        // root.castShadow = true;
+        // root.receiveShadow = true;
+        root.traverse((child) => {
+            // console.log(child);
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+            if (child.isGroup) {
+                child.traverse((grandchild) => {
+                    grandchild.castShadow = true;
+                    grandchild.receiveShadow = true;
+                })
+            }
+          });
         // scene.add(root);
-        console.log(root)
-        tools.add(new fence(scene,world,root.children[4])) 
-        for(var i=0; i<4; i++){
-            tools.add(new wall(scene,world,root.children[i]));  
+        // for(var i=0; i<60; i++){
+        //     console.log("child", i, root.children[i].userData);  
+        // }
+        tools.add(new fence(scene,world,root.children[3])) 
+        for(var i=0; i<3; i++){
+            // console.log("Bounding Box", root.children[i].geometry.boundingBox);
+            // console.log(root.children[i].position);
+            tools.add(new wall(scene,world,root.children[i], 0));  
         }
-        for(var i=27; i<37; i++){
-            tools.add(new wall(scene,world,root.children[i]));
+        for(var i=26; i<36; i++){
+            tools.add(new wall(scene,world,root.children[i], 2));
         }
         const rest = []
-        for(var i=5; i<27; i++){
+        for(var i=4; i<26; i++){
             rest.push(root.children[i])
         }
-        for(var i=37;i<47;i++){
+        for(var i=36;i<46;i++){
             rest.push(root.children[i])
         }
         for(var i of rest){
@@ -444,20 +463,26 @@ async function init(running){
     {
         // 灯光
         const color = 0xffffff
-        const intensity = 1
+        const intensity = 3
         // 方向光
         const ambientlight = new THREE.AmbientLight(color)
-        const light = new THREE.DirectionalLight(color, intensity)
-        var skyLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.3);
+        const light = new THREE.DirectionalLight(color, intensity);
+        light.shadow.camera.left = -15;   // Left boundary
+        light.shadow.camera.right = 15;  // Right boundary
+        light.shadow.camera.top = 15;    // Top boundary
+        light.shadow.camera.bottom = -15;// Bottom boundary
+        light.shadow.mapSize.width = 1536;  // Increase for better quality
+        light.shadow.mapSize.height = 1536;
+        var skyLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.5);
         skyLight.position.set(0, 50, 0);
-        scene.add(skyLight);
-        var hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.2);
+        // scene.add(skyLight);
+        var hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.3);
         hemiLight.position.set(0, 50, 0);
-        scene.add(hemiLight);
-        light.position.set(5, 10, 0);
+        // scene.add(hemiLight);
+        light.position.set(0, 20, 0);
         light.castShadow = true;
         // light.shadow.intensity = 100;
-        light.target.position.set(0, 0, 0);
+        light.target.position.set(15, 4, 0);
         scene.add(light);
         scene.add(ambientlight);
         scene.add(light.target);
@@ -532,6 +557,7 @@ async function init(running){
                     {x:20.2, y:5.3, z:1}, {x:0, y:0, z:Math.sin(-Math.PI/4), w:Math.cos(-Math.PI/4)});
     // receiver3.position.set(2,1.2,-4.8);
     // receiver3.rotation.x = Math.PI/2;
+    // const cube1 = new cube(scene, world, {x:2, y:2.4, z:0}, {x:0, y:0, z:0, w:1},gltfLoader,Material2);
 
     const plate1 = new plate(scene,world,{x:6,y:3.9,z:-3},{x:0, y:0, z:0, w:1},gltfLoader,0xff3333);
     const mixer4 = new THREE.AnimationMixer(plate1)
@@ -559,6 +585,7 @@ async function init(running){
     tools.add(receiver2);
     tools.add(receiver3);
     tools.add(plate1);
+    // tools.add(cube1);
     await sleep(5000);
 
     lasers.addintersectobjects(tools.children);

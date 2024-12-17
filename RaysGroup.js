@@ -60,47 +60,51 @@ export class LaserBeam extends THREE.Mesh{
 		    depthWrite	: false,
 		    transparent	: true
 	    })
-	var geometry	= new THREE.PlaneGeometry(0.1, 1)
-	var nPlanes	= 16;
-	for(var i = 0; i < nPlanes; i++){
-		var mesh = new THREE.Mesh(geometry, material)
-		mesh.rotation.y	= i/nPlanes * Math.PI
-		this.add(mesh)
-	}
-    var color_sprite = '';
-    if(color===0xff3333){
-        color_sprite = 'red'
-    }
-    else if(color===0x3333ff){
-        color_sprite = 'blue'
-    }
-    var textureUrl	= `/${color_sprite}.jpg`;
-	var texture	= new THREE.TextureLoader().load(textureUrl)	
-	var material	= new THREE.SpriteMaterial({
-		map		: texture,
-		blending	: THREE.AdditiveBlending,
-	})
-	var sprite	= new THREE.Sprite(material)
-	sprite.scale.x = 0.5;
-	sprite.scale.y = 1;
+        var geometry	= new THREE.PlaneGeometry(0.1, 1)
+        var nPlanes	= 16;
+        for(var i = 0; i < nPlanes; i++){
+            var mesh = new THREE.Mesh(geometry, material)
+            mesh.rotation.y	= i/nPlanes * Math.PI
+            this.add(mesh)
+        }
+        var color_sprite = '';
+        if(color===0xff3333){
+            color_sprite = 'red'
+        }
+        else if(color===0x3333ff){
+            color_sprite = 'blue'
+        }
+        var textureUrl	= `/${color_sprite}.jpg`;
+        var texture	= new THREE.TextureLoader().load(textureUrl)	
+        var material	= new THREE.SpriteMaterial({
+            map		: texture,
+            blending	: THREE.AdditiveBlending,
+        })
+        var sprite	= new THREE.Sprite(material)
+        sprite.scale.x = 0.5;
+        sprite.scale.y = 1;
 
-	sprite.position.y	= 0.49
-	this.add(sprite);
-    this.lastIntersects	= [];
-    this.raycaster	= new THREE.Raycaster();
-    this.raycaster.layers.enable(1);
-    this.raycaster.ray.origin.copy(this.startposition);
-    // var matrixWorld	= this.matrixWorld.clone();
-    // matrixWorld.setPosition(new THREE.Vector3(0,0,0));		
-	this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
-    this.startobject = startobject;
-    this.endobject = endobject;
-    this._intersectobject = startobject;
-    this.identity = id;
-    this.color = color
-    console.log(this)
+        sprite.position.y	= 0.49
+        this.add(sprite);
+        this.lastIntersects	= [];
+        this.raycaster	= new THREE.Raycaster();
+        this.raycaster.layers.enable(1);
+        this.raycaster.ray.origin.copy(this.startposition);
+        // var matrixWorld	= this.matrixWorld.clone();
+        // matrixWorld.setPosition(new THREE.Vector3(0,0,0));		
+        this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
+        this.startobject = startobject;
+        this.endobject = endobject;
+        this._intersectobject = startobject;
+        this.identity = id;
+        this.color = color
+        console.log(this)
     }
     intersect(intersectobjects){       
+        // console.log("INTERSECT HAPPENS");
+        // console.log("intersectobj:", intersectobjects);
+        // console.log("startobj:", this.startobject);
+        // console.log("endobj", this.endobject);
         const pos = computepositions(this.startobject,this.endobject);
         const startposition = pos[0];
         const endposition = pos[1];
@@ -145,7 +149,7 @@ export class LaserBeam extends THREE.Mesh{
             // _event.color = this.color;
             // _event.sourceobject = this.startobject;
             // this.endobject.dispatchEvent(_event);
-            console.log(this.endobject)
+            // console.log(this.endobject)
             this.endobject.onReceive(this.startobject, this.color);
         }
         if(intersectobject.identity != this.endobject.identity && this._intersectobject.identity===this.endobject.identity){        //If cannot reach endobject, disconnected
@@ -153,6 +157,7 @@ export class LaserBeam extends THREE.Mesh{
             // _event.color = this.color;
             // _event.sourceobject = this.startobject;
             // this.endobject.dispatchEvent(_event);
+            // console.log("onBreak", this.startobject);
             this.endobject.onBreak(this.startobject, this.color);
         }
         this._intersectobject = intersectobject;
@@ -203,6 +208,9 @@ export class RaysGroup extends THREE.Group{
         }
     }
     addLaser(color,startobject,endobject){
+        console.log("ADD LASER");
+        console.log("start object:", startobject);
+        console.log("end object:", endobject);
         this.add(new LaserBeam(color,startobject,endobject,this._identity));
         this._identity += 1;
     }

@@ -360,6 +360,8 @@ async function init(running){
     // const canvas = document.querySelector('#level1');
     content.appendChild(canvas)
     const renderer = new THREE.WebGLRenderer({canvas: canvas});
+    // console.log(window.devicePixelRatio)
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize( window.innerWidth, window.innerHeight );
     window.addEventListener('resize', () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -368,15 +370,21 @@ async function init(running){
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const gltfLoader = new GLTFLoader();
-    const url = '/level1.glb';
+    const url = '/level1/level1.gltf'; 
     gltfLoader.load(url, (gltf) => {
         var root = gltf.scene;
-        root.castShadow = true;
-        root.receiveShadow = true;
+        // root.castShadow = true;
+        // root.receiveShadow = true;
+        root.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+          });
         // scene.add(root); 
         for(var i=0; i<15; i++){
             if(i!=2){
-                tools.add(new wall(scene,world,root.children[i]));
+                tools.add(new wall(scene,world,root.children[i], 2));
             }             //2 is the ground
         }
         const ground = root.children[2]
@@ -398,24 +406,33 @@ async function init(running){
 
     {
         // 灯光
-        const color = 0xffffff
-        const intensity = 1
         // 方向光
-        const ambientlight = new THREE.AmbientLight(color)
-        const light = new THREE.DirectionalLight(color, intensity)
-        var skyLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.3);
-        skyLight.position.set(0, 50, 0);
-        scene.add(skyLight);
-        var hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.2);
-        hemiLight.position.set(0, 50, 0);
-        scene.add(hemiLight);
-        light.position.set(5, 10, 0);
+        const color = 0xffcf8f
+        const intensity = 3
+        const light = new THREE.DirectionalLight(color, intensity);
+        // console.log("light.shadow.camera.left", light.shadow.camera.left);
+        // console.log("light.shadow.mapSize.width", light.shadow.mapSize.width);
+        light.shadow.camera.left = -10;   // Left boundary
+        light.shadow.camera.right = 10;  // Right boundary
+        light.shadow.camera.top = 10;    // Top boundary
+        light.shadow.camera.bottom = -10;// Bottom boundary
+        light.shadow.mapSize.width = 1024;  // Increase for better quality
+        light.shadow.mapSize.height = 1024;
+        light.position.set(-50, 10, 0);
         light.castShadow = true;
-        // light.shadow.intensity = 100;
+        // light.shadow.intensity = 2;
         light.target.position.set(0, 0, 0);
         scene.add(light);
+
+        const ambientlight = new THREE.AmbientLight(color)
+        var skyLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.1);
+        skyLight.position.set(0, 50, 0);
+        scene.add(skyLight);
+        var hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.1);
+        hemiLight.position.set(0, 50, 0);
+        scene.add(hemiLight);
         scene.add(ambientlight);
-        scene.add(light.target);
+        // scene.add(light.target);
     }
 
     // camera.position.set(-4, 1.7, 0);

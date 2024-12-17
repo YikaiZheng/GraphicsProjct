@@ -87,6 +87,7 @@ class PlayerInterface {
     }
 
     tryjump() {
+        // this.player.body.velocity.y += 5;
         if(this.player.test_standing()) {
             this.player.body.velocity.y += 5;
             this.player.update_animation_idx(5);
@@ -133,7 +134,7 @@ export class PlayerControl_KeyMouse {
 
         document.addEventListener('mousemove', (event) => {
             if (document.pointerLockElement === element) {
-                console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
+                // console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
                 // Use event.movementX and event.movementY for smooth movement tracking
                 if (this.interface.running.isMouseLocked) {
                     this.mouse_deltaX += event.movementX;

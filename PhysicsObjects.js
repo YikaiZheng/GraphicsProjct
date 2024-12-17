@@ -90,6 +90,7 @@ export class PlayerObject extends PhysicsObject {
         this.attached_offset = [];
         this.attached_abletoPlace = [];
         this.attached_distance = 2.5;
+        this.reach = 3;
         // this.position.copy(this.body.position);
         // this.quaternion.copy(this.body.quaternion);
 
@@ -114,7 +115,11 @@ export class PlayerObject extends PhysicsObject {
             (gltf) => {
                 robotmixer = new THREE.AnimationMixer(gltf.scene);
                 this.model = gltf.scene;
-                this.model.castShadow = true;
+                gltf.scene.traverse((child) => {
+                    if (child.isMesh) {
+                      child.castShadow = true;
+                    }
+                  });
                 this.scene.add(gltf.scene);
                 robotarmup = robotmixer.clipAction(gltf.animations[0]);
                 robotaction = robotmixer.clipAction(gltf.animations[1]);

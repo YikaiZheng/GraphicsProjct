@@ -30,6 +30,12 @@ export class connector extends PhysicsObject {
         loader.load(url, (gltf) => {
             const root = gltf.scene;
             this.add(root);
+            root.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    // child.receiveShadow = true;
+                }
+              });
             const layer = new THREE.Layers();
             layer.set(2);
             for(var object of root.children){
@@ -186,11 +192,12 @@ export class connector extends PhysicsObject {
 
                 this._color = color;
             }
-            else{
-                if(this.sourceobject.click.includes('pick')&&!this.sourceobject._attached){
-                    this.lasergroup.addLaser(color,this,sourceobject)
-                }
-            }
+            // else{
+            //     console.log(this.sourceobject);
+            //     if(this.sourceobject.click.includes('pick')&&!this.sourceobject._attached){
+            //         this.lasergroup.addLaser(color,this,sourceobject)
+            //     }
+            // }
         }
     }
     
@@ -238,17 +245,18 @@ export class connector extends PhysicsObject {
 }
 
 export class wall extends PhysicsObject {
-    constructor(scene, world, mesh){
-        console.log(mesh)
+    constructor(scene, world, mesh, taller){
+        // console.log(mesh)
         const wallGeo = mesh.geometry;
         const wallMat = mesh.material;
         const position = mesh.position;
+        // console.log(position);
         const quaternion = mesh.quaternion;
-        const cubeSizex = wallGeo.boundingBox.max.x * mesh.scale.x
-        const cubeSizey = wallGeo.boundingBox.max.y * mesh.scale.y
-        const cubeSizez = wallGeo.boundingBox.max.z * mesh.scale.z
+        const cubeSizex = (wallGeo.boundingBox.max.x - wallGeo.boundingBox.min.x) * mesh.scale.x / 2
+        const cubeSizey = ((wallGeo.boundingBox.max.y - wallGeo.boundingBox.min.y) * mesh.scale.y) / 2 + taller
+        const cubeSizez = (wallGeo.boundingBox.max.z - wallGeo.boundingBox.min.z) * mesh.scale.z / 2
         const wall_Shape = new CANNON.Box(new CANNON.Vec3(cubeSizex, cubeSizey, cubeSizez));
-        console.log(wall_Shape)
+        // console.log(wall_Shape)
         const wall_Body = new CANNON.Body({
             shape: wall_Shape,
             position: new CANNON.Vec3(position.x, position.y, position.z),
@@ -270,7 +278,7 @@ export class wall extends PhysicsObject {
 
 export class fence extends PhysicsObject {
     constructor(scene, world, mesh){
-        console.log(mesh)
+        // console.log(mesh)
         const wallGeo = mesh.geometry;
         const wallMat = mesh.material;
         const position = mesh.position;
@@ -279,7 +287,7 @@ export class fence extends PhysicsObject {
         const cubeSizey = wallGeo.boundingBox.max.y * mesh.scale.y
         const cubeSizez = wallGeo.boundingBox.max.z * mesh.scale.z + 0.05
         const wall_Shape = new CANNON.Box(new CANNON.Vec3(cubeSizex, cubeSizey +5, cubeSizez));
-        console.log(wall_Shape)
+        // console.log(wall_Shape)
         const wall_Body = new CANNON.Body({
             shape: wall_Shape,
             position: new CANNON.Vec3(position.x, position.y, position.z),
@@ -550,7 +558,7 @@ export class door extends AnimatedPhysicsObject {
         const geometry = new THREE.BoxGeometry(doorsize.x,doorsize.y,doorsize.z);
         const material = new THREE.MeshPhongMaterial({  color: '#800080',emissive: '#800080',specular: '#cd00cd',shininess: 10,transparent: true,opacity: 0.6});
         
-        const Shape = new CANNON.Box(new CANNON.Vec3(doorsize.x / 2, doorsize.y / 2, 0.2 + doorsize.z / 2));
+        const Shape = new CANNON.Box(new CANNON.Vec3(doorsize.x / 2, doorsize.y / 2 + 2, 0.2 + doorsize.z / 2));
         const doorbody = new CANNON.Body({
             shape: Shape,
             // position: new CANNON.Vec3(position.x, position.y, position.z),
