@@ -475,15 +475,13 @@ async function init(running){
           });
         // scene.add(root);
         tools.add(new wall(scene,world,root.children[0],0));
-        for(var i=1; i<27; i++){
-            if(i!=2){
-                tools.add(new wall(scene,world,root.children[i],3));
-            }             //2 is the ground
+        for(var i=2; i<28; i++){
+            tools.add(new wall(scene,world,root.children[i],3));           //2 is the ground
         }
-        for(var i=27;i<33;i++){
+        for(var i=28;i<33;i++){
             tools.add(new fence(scene,world,root.children[i]))
         }
-        scene.add(root.children[2])
+        scene.add(root.children[1])
     });
     const listener = new THREE.AudioListener();
     player1.addSoundEffect(listener);
