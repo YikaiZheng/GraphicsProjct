@@ -314,12 +314,14 @@ export class PlayerControl_Joystick {
         
 
         window.addEventListener("gamepadconnected", (event) => {
-            console.log("Gamepad connected:", event.gamepad);
-            this.stick_index = event.gamepad.index;
-            this.button_size = event.gamepad.buttons.length;
-            this.button_now = new Array(this.button_size).fill(false);
-            this.button_up = new Array(this.button_size).fill(false);
-            this.button_down = new Array(this.button_size).fill(false);
+            if(this.stick_index < 0) {
+                console.log("Gamepad connected:", event.gamepad);
+                this.stick_index = event.gamepad.index;
+                this.button_size = event.gamepad.buttons.length;
+                this.button_now = new Array(this.button_size).fill(false);
+                this.button_up = new Array(this.button_size).fill(false);
+                this.button_down = new Array(this.button_size).fill(false);
+            }
         });
 
     }
@@ -335,9 +337,15 @@ export class PlayerControl_Joystick {
             const RX = this.joystick.axes[2]; // Right joystick horizontal
             const RY = this.joystick.axes[3]; // Right joystick vertical
 
+            console.log(this.button_now);
+            console.log("LX", LX);
+            console.log("LY", LY);
+            console.log("RX", RX);
+            console.log("RY", RY);
+
             // Read button states (true for pressed, false for not pressed)
             // 0:A 1:B 2:X 3:Y 4:LB 5:RB 6:LT 7:RT 8:LMenu 9:RMenu 10:Lstick 11:Rstick 12:v 13:> 14:< 16:^
-
+            
             this.joystick.buttons.forEach((button, index) => {
                 this.button_up[index] = false;
                 this.button_down[index] = false;
@@ -361,19 +369,19 @@ export class PlayerControl_Joystick {
             const direction_left = new THREE.Vector3(0, 1, 0);
             direction_left.cross(direction_front);
             var v = new THREE.Vector3(0, 0, 0);
-            const vz = direction_front.clone().multiplyScalar(LY);
-            const vx = direction_left.clone().multiplyScalar(LX);
+            const vz = direction_front.clone().multiplyScalar(-LY);
+            const vx = direction_left.clone().multiplyScalar(-LX);
             v.add(vz);
             v.add(vx);
             var animation_idx = 0;
-            v.normalize();
+            // v.normalize();
             if(Math.abs(LY) >= Math.abs(LX)) {
-                if(LY >= LX) { animation_idx = 1; }
-                else { animation_idx = 4; }
+                if(LY >= LX && LY > 0.01) { animation_idx = 1; }
+                else if(LY < -0.01) { animation_idx = 4; }
             }
             else {
-                if(LY >= LX) { animation_idx = 2; }
-                else { animation_idx = 3; }
+                if(LY >= LX && LX < -0.01) { animation_idx = 2; }
+                else if(LX > 0.01) { animation_idx = 3; }
             }
             this.interface.move(v, animation_idx);
 
@@ -385,8 +393,9 @@ export class PlayerControl_Joystick {
                 this.interface.click1();
             }
             
-            this.interface.movecamera(-LX * 0.005, -LY * 0.005);
+            this.interface.movecamera(-RX * 0.05, -RY * 0.05);
 
         }
     }
 }
+

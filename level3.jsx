@@ -528,8 +528,8 @@ async function init(running){
     const mixers = [];
 
     const dashes = new DashesGroup();
-    // const tools = new ToolsGroup(player1, scene, world, renderer, player2);
-    const tools = new ToolsGroup(player1, scene, world, renderer);
+    const tools = new ToolsGroup(player1, scene, world, renderer, player2);
+    // const tools = new ToolsGroup(player1, scene, world, renderer);
     const lasers = new RaysGroup();
     var sounds = [];
 
@@ -681,8 +681,8 @@ async function init(running){
             player2.update_mixer(delta);
             // robotmixer.update(delta*2);
             // renderer.render(scene, player1.camera)
-            render(renderer, player1, player2, scene, leftwindow, rightwindow);
         }
+        render(renderer, player1, player2, scene, leftwindow, rightwindow);
     }
 
     if ( WebGL.isWebGL2Available() ) {
