@@ -122,28 +122,27 @@ export class LaserBeam extends THREE.Mesh{
         this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
         var intersects = this.raycaster.intersectObjects(intersectobjects, false);         //TODO: Recompute origin and direction before intersecting
         // console.log(intersects.length)
-        var position = intersects[0].point;
-        // const startposition = pos[0];
-        // const dvector = new THREE.Vector3().subVectors(position, startposition);
-        // length = dvector.length();
-        // // console.log(dvector);
-        // const theta = Math.acos(dvector.y/length);
-        // var phi = Math.atan(dvector.x/dvector.z);
-        // // console.log(phi)
-        // if(dvector.z<0){
-        //     phi = phi + Math.PI;
-        // }
-        // const euler = new THREE.Euler(theta,phi,0,'YXZ');
+        
+        var firstvalid = 0
+        var intersectobject = intersects[firstvalid].object;
+        console.log(intersectobject)
+        if(intersectobject.identity===this.startobject.identity){
+            firstvalid = firstvalid + 1
+        }
+        intersectobject = intersects[firstvalid].object;
+        console.log(intersectobject)
+        if(intersectobject._attached){
+            firstvalid = firstvalid + 1
+        }
+        intersectobject = intersects[firstvalid].object;
+        console.log(intersectobject)
+        var position = intersects[firstvalid].point;
         dvector = new THREE.Vector3().subVectors(position, startposition);
         this.position.set(startposition.x+dvector.x/2,startposition.y+dvector.y/2,startposition.z+dvector.z/2);
         this.rotation.copy(euler);                                                                                        //First update the geometry of the laser. This can be helpful when connectors' position change without picking it (e.g. lifted up by fan)
         var distance = position.distanceTo(this.raycaster.ray.origin)
         this.scale.y = distance+0.05;
         this.children[this.children.length-1].scale.y = 0.49/(distance+0.01);
-        var intersectobject = intersects[0].object;
-        if(intersectobject.identity===this.startobject.identity){
-            intersectobject = intersects[1].object;
-        }
         if(intersectobject.identity === this.endobject.identity && this._intersectobject.identity!=this.endobject.identity){        //If reach endobject, the two objects are connected
             // _event.type = 'receive';
             // _event.color = this.color;

@@ -166,9 +166,15 @@ class ToolsGroup extends Group {
         }
     }
 
-    onPointerEvent() {
+    onPointerEvent(role) {
         const scope = this;
-        const camera = scope.player.camera;
+        let camera;
+        if(role ===1){
+            camera = scope.player.camera;
+        }
+        else{
+            camera = scope.player2.camera;
+        }
         const renderer = scope.renderer;
         const raycaster = new Raycaster();
         const reach = this.player.reach;
