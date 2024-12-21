@@ -192,12 +192,12 @@ export class connector extends PhysicsObject {
 
                 this._color = color;
             }
-            // else{
-            //     console.log(this.sourceobject);
-            //     if(this.sourceobject.click.includes('pick')&&!this.sourceobject._attached){
-            //         this.lasergroup.addLaser(color,this,sourceobject)
-            //     }
-            // }
+            else{
+                console.log(sourceobject);
+                if(sourceobject.click.includes('pick')&&!sourceobject._attached){
+                    this.lasergroup.addLaser(color,this,sourceobject)
+                }
+            }
         }
     }
     
