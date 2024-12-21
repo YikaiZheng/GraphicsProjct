@@ -205,10 +205,6 @@ export default function Level2(){
     return(
         <ThemeProvider theme={darkTheme}>
         <div className ="container" id='content'>
-        <div id="cross">
-            <div className="horizontal"></div>
-            <div className="vertical"></div>
-        </div>
                 {loading && <div className="box stack-top">
                         <CssBaseline />
                         <Stack sx={{ width: '100%', height:'100%', color: 'grey.500' }} spacing={2}>
@@ -234,6 +230,10 @@ export default function Level2(){
                     </Toolbar>
                 </AppBar>`
                 {/* <canvas className="box" id="level1"></canvas> */}
+                <div id="cross">
+                    <div className="horizontal"></div>
+                    <div className="vertical"></div>
+                </div>
         </div>
         {!loading && <Dialog open={manualOpen} onClose={()=>{return;}} maxWidth='500px' maxHeight='500px'>
             <Box sx={{ m: 2 }}>
