@@ -13,63 +13,6 @@ class PlayerInterface {
         this.role = role;
         this.num_player = num_player
 
-        // Element to enable pointer lock (e.g., the entire document body)
-        const element = document.body;
-
-        // Request Pointer Lock on Click
-        element.addEventListener('click', () => {
-            console.log(this.running.isinLevel);
-            console.log((!this.running.isPaused));
-            console.log((!this.running.isMouseLocked));
-            if(this.running.isinLevel && (!this.running.isPaused) && (!this.running.isMouseLocked)) {
-                console.log("requestPointerLock");
-                element.requestPointerLock();
-            }
-        });
-
-        // Listen for Pointer Lock Changes
-        document.addEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === element) {
-                console.log("Pointer lock enabled");
-                this.running.isMouseLocked = true;
-            } else {
-                console.log("Pointer lock disabled");
-                this.running.isMouseLocked = false;
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            player.camera.aspect = window.innerWidth / window.innerHeight / this.num_player;
-            player.camera.updateProjectionMatrix();
-        });
-    }
-
-    cleanup() {
-        // Element to enable pointer lock (e.g., the entire document body)
-        const element = document.body;
-
-        // Request Pointer Lock on Click
-        element.removeEventListener('click', () => {
-            if(this.running.inLevel && (!this.running.isPaused) && (!this.running.isMouseLocked)) {
-                element.requestPointerLock();
-            }
-        });
-
-        // Listen for Pointer Lock Changes
-        document.removeEventListener('pointerlockchange', () => {
-            if (document.pointerLockElement === element) {
-                console.log("Pointer lock enabled");
-                this.running.isMouseLocked = true;
-            } else {
-                console.log("Pointer lock disabled");
-                this.running.isMouseLocked = false;
-            }
-        });
-
-        window.removeEventListener('resize', () => {
-            player.camera.aspect = window.innerWidth / window.innerHeight / this.num_player;
-            player.camera.updateProjectionMatrix();
-        });
     }
 
     movecamera(dX, dY) {
@@ -99,9 +42,10 @@ class PlayerInterface {
 }
 
 export class PlayerControl_KeyMouse {
-    constructor(player, world, toolsgroup, running, role=1, num_player=1) {
+    constructor(player, world, toolsgroup, running, role=1, num_player=1, element) {
         this.world = world;
         this.player = player;
+        this.role = role;
         this.interface = new PlayerInterface(player, world, toolsgroup, running, role, num_player);
         // Track Keyboard Input
         this.key_state = {}; // Object to store key states
@@ -113,10 +57,10 @@ export class PlayerControl_KeyMouse {
         this.mouse_deltaY = 0;
 
         // Element to enable pointer lock (e.g., the entire document body)
-        const element = document.body;
+        // const element = document.body;
 
         document.addEventListener('keydown', (event) => {
-            if(this.interface.running.isMouseLocked) {
+            if(this.interface.running.isMouseLocked[this.role]) {
                 if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
                     this.key_state[event.key] = true; // Mark key as pressed
                     this.key_down[event.key] = true; // Mark key as pressed
@@ -125,7 +69,7 @@ export class PlayerControl_KeyMouse {
             }
         });
         document.addEventListener('keyup', (event) => {
-            if(this.interface.running.isMouseLocked) {
+            if(this.interface.running.isMouseLocked[this.role]) {
                 if(this.key_state[event.key] == true) {
                     this.key_state[event.key] = false; // Mark key as released
                     this.key_up[event.key] = true; // Mark key as released
@@ -138,7 +82,7 @@ export class PlayerControl_KeyMouse {
             if (document.pointerLockElement === element) {
                 // console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
                 // Use event.movementX and event.movementY for smooth movement tracking
-                if (this.interface.running.isMouseLocked) {
+                if (this.interface.running.isMouseLocked[this.role]) {
                     this.mouse_deltaX += event.movementX;
                     this.mouse_deltaY += event.movementY;
                 }
@@ -147,7 +91,7 @@ export class PlayerControl_KeyMouse {
         
         // Track Mouse Clicks
         document.addEventListener('mousedown', (event) => {
-            if (this.interface.running.isMouseLocked) {
+            if (this.interface.running.isMouseLocked[this.role]) {
                 console.log(`Mouse button pressed: ${event.button}`); 
                 if (event.button == 0) {
                     this.isMouseLeftDown = true;
@@ -156,7 +100,7 @@ export class PlayerControl_KeyMouse {
             }
         });
         document.addEventListener('mouseup', (event) => {
-            if (this.interface.running.isMouseLocked) {
+            if (this.interface.running.isMouseLocked[this.role]) {
                 console.log(`Mouse button released: ${event.button}`);
                 if (event.button == 0) {
                     this.isMouseLeftDown = false;
@@ -171,64 +115,64 @@ export class PlayerControl_KeyMouse {
         }, { passive: false }); // Passive must be false for preventDefault
     }
 
-    cleanup() {
-        const element = document.body;
+    // cleanup() {
+    //     const element = document.body;
 
-        document.removeEventListener('keydown', (event) => {
-            if(this.interface.running.isMouseLocked) {
-                if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
-                    this.key_state[event.key] = true; // Mark key as pressed
-                    this.key_down[event.key] = true; // Mark key as pressed
-                    console.log(`Key pressed: ${event.key}`);
-                }
-            }
-        });
-        document.removeEventListener('keyup', (event) => {
-            if(this.interface.running.isMouseLocked) {
-                if(this.key_state[event.key] == true) {
-                    this.key_state[event.key] = false; // Mark key as released
-                    this.key_up[event.key] = true; // Mark key as released
-                    console.log(`Key released: ${event.key}`);
-                }
-            }
-        });
+    //     document.removeEventListener('keydown', (event) => {
+    //         if(this.interface.running.isMouseLocked) {
+    //             if((!(event.key in this.key_state)) || this.key_state[event.key] == false) {
+    //                 this.key_state[event.key] = true; // Mark key as pressed
+    //                 this.key_down[event.key] = true; // Mark key as pressed
+    //                 console.log(`Key pressed: ${event.key}`);
+    //             }
+    //         }
+    //     });
+    //     document.removeEventListener('keyup', (event) => {
+    //         if(this.interface.running.isMouseLocked) {
+    //             if(this.key_state[event.key] == true) {
+    //                 this.key_state[event.key] = false; // Mark key as released
+    //                 this.key_up[event.key] = true; // Mark key as released
+    //                 console.log(`Key released: ${event.key}`);
+    //             }
+    //         }
+    //     });
 
-        document.removeEventListener('mousemove', (event) => {
-            if (document.pointerLockElement === element) {
-                console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
-                // Use event.movementX and event.movementY for smooth movement tracking
-                if (this.interface.running.isMouseLocked) {
-                    this.mouse_deltaX += event.movementX;
-                    this.mouse_deltaY += event.movementY;
-                }
-            }
-        });
+    //     document.removeEventListener('mousemove', (event) => {
+    //         if (document.pointerLockElement === element) {
+    //             console.log(`Mouse moved: deltaX=${event.movementX}, deltaY=${event.movementY}`);
+    //             // Use event.movementX and event.movementY for smooth movement tracking
+    //             if (this.interface.running.isMouseLocked) {
+    //                 this.mouse_deltaX += event.movementX;
+    //                 this.mouse_deltaY += event.movementY;
+    //             }
+    //         }
+    //     });
         
-        // Track Mouse Clicks
-        document.removeEventListener('mousedown', (event) => {
-            if (this.interface.running.isMouseLocked) {
-                console.log(`Mouse button pressed: ${event.button}`); 
-                if (event.button == 0) {
-                    this.isMouseLeftDown = true;
-                    this.interface.click1();
-                }
-            }
-        });
-        document.removeEventListener('mouseup', (event) => {
-            if (this.interface.running.isMouseLocked) {
-                console.log(`Mouse button released: ${event.button}`);
-                if (event.button == 0) {
-                    this.isMouseLeftDown = false;
-                }
-            }
-        });
-        document.removeEventListener('wheel', (event) => {
-            if (document.pointerLockElement === element) {
-                event.preventDefault(); // Optional: Prevent page scrolling
-                console.log(`Mouse wheel scrolled: deltaY=${event.deltaY}`);
-            } 
-        }, { passive: false }); // Passive must be false for preventDefault
-    }
+    //     // Track Mouse Clicks
+    //     document.removeEventListener('mousedown', (event) => {
+    //         if (this.interface.running.isMouseLocked[role]) {
+    //             console.log(`Mouse button pressed: ${event.button}`); 
+    //             if (event.button == 0) {
+    //                 this.isMouseLeftDown = true;
+    //                 this.interface.click1();
+    //             }
+    //         }
+    //     });
+    //     document.removeEventListener('mouseup', (event) => {
+    //         if (this.interface.running.isMouseLocked[role]) {
+    //             console.log(`Mouse button released: ${event.button}`);
+    //             if (event.button == 0) {
+    //                 this.isMouseLeftDown = false;
+    //             }
+    //         }
+    //     });
+    //     document.removeEventListener('wheel', (event) => {
+    //         if (document.pointerLockElement === element) {
+    //             event.preventDefault(); // Optional: Prevent page scrolling
+    //             console.log(`Mouse wheel scrolled: deltaY=${event.deltaY}`);
+    //         } 
+    //     }, { passive: false }); // Passive must be false for preventDefault
+    // }
 
     update() {
 
@@ -296,106 +240,197 @@ function getGamepad(idx) {
 }
 
 export class PlayerControl_Joystick {
-    constructor(player, world, toolsgroup, running, role = 2, num_player=2) {
+    constructor(player, world, toolsgroup, running, role = 2, num_player=2, joystick_idx) {
         this.world = world;
         this.player = player;
+        this.role = role;
         this.interface = new PlayerInterface(player, world, toolsgroup, running, role, num_player);
-        this.joystick = getGamepad();
-        this.stick_index = -1;
-        this.button_size = 0;
-        this.button_now = null;
-        this.button_up = null;
-        this.button_down = null;
-        this.isMouselocked = false;
+        this.stick_index = joystick_idx;        
+        this.joystick = getGamepad(this.stick_index);
+        this.button_size = this.joystick.buttons.length;;
+        this.button_now = new Array(this.button_size).fill(false);
+        this.button_up = new Array(this.button_size).fill(false);
+        this.button_down = new Array(this.button_size).fill(false);
+        // this.isMouselocked = false;
         // console.log(this.joystick);
-        if (!this.joystick) {
-            console.log("Press Any Key to Recognize Joystick");
-        }
-        
-
-        window.addEventListener("gamepadconnected", (event) => {
-            if(this.stick_index < 0) {
-                console.log("Gamepad connected:", event.gamepad);
-                this.stick_index = event.gamepad.index;
-                this.button_size = event.gamepad.buttons.length;
-                this.button_now = new Array(this.button_size).fill(false);
-                this.button_up = new Array(this.button_size).fill(false);
-                this.button_down = new Array(this.button_size).fill(false);
-            }
-        });
 
     }
 
     update() {            
-        if (this.stick_index < 0) {
-            console.log("Press Any Key to Recognize Joystick");
-        }
-        else {
-            this.joystick = getGamepad(this.stick_index);
-            const LX = this.joystick.axes[0];  // Left joystick horizontal
-            const LY = this.joystick.axes[1];  // Left joystick vertical
-            const RX = this.joystick.axes[2]; // Right joystick horizontal
-            const RY = this.joystick.axes[3]; // Right joystick vertical
+        // if (this.stick_index < 0) {
+        //     console.log("Press Any Key to Recognize Joystick");
+        // }
+        // else {
+        this.joystick = getGamepad(this.stick_index);
+        const LX = this.joystick.axes[0];  // Left joystick horizontal
+        const LY = this.joystick.axes[1];  // Left joystick vertical
+        const RX = this.joystick.axes[2]; // Right joystick horizontal
+        const RY = this.joystick.axes[3]; // Right joystick vertical
 
-            console.log(this.button_now);
-            console.log("LX", LX);
-            console.log("LY", LY);
-            console.log("RX", RX);
-            console.log("RY", RY);
+        console.log(this.button_now);
+        console.log("LX", LX);
+        console.log("LY", LY);
+        console.log("RX", RX);
+        console.log("RY", RY);
 
-            // Read button states (true for pressed, false for not pressed)
-            // 0:A 1:B 2:X 3:Y 4:LB 5:RB 6:LT 7:RT 8:LMenu 9:RMenu 10:Lstick 11:Rstick 12:v 13:> 14:< 16:^
-            
-            this.joystick.buttons.forEach((button, index) => {
-                this.button_up[index] = false;
-                this.button_down[index] = false;
-                if(button.pressed) {
-                    if(!this.button_now[index]) {
-                        this.button_down[index] = true;
-                    }
-                    this.button_now[index] = true;
+        // Read button states (true for pressed, false for not pressed)
+        // 0:A 1:B 2:X 3:Y 4:LB 5:RB 6:LT 7:RT 8:LMenu 9:RMenu 10:Lstick 11:Rstick 12:v 13:> 14:< 16:^
+        
+        this.joystick.buttons.forEach((button, index) => {
+            this.button_up[index] = false;
+            this.button_down[index] = false;
+            if(button.pressed) {
+                if(!this.button_now[index]) {
+                    this.button_down[index] = true;
                 }
-                else {
-                    if(this.button_now[index]) {
-                        this.button_up[index] = true;
-                    }
-                    this.button_now[index] = false;
-                }
-            });
-            const zerovec = new THREE.Vector3(0, 0, 0);
-            const direction_front = this.player.facing_direction.clone();
-            // console.log(direction_front);
-            const direction_up = new THREE.Vector3(0, 1, 0);
-            const direction_left = new THREE.Vector3(0, 1, 0);
-            direction_left.cross(direction_front);
-            var v = new THREE.Vector3(0, 0, 0);
-            const vz = direction_front.clone().multiplyScalar(-LY);
-            const vx = direction_left.clone().multiplyScalar(-LX);
-            v.add(vz);
-            v.add(vx);
-            var animation_idx = 0;
-            // v.normalize();
-            if(Math.abs(LY) >= Math.abs(LX)) {
-                if(LY >= LX && LY > 0.01) { animation_idx = 1; }
-                else if(LY < -0.01) { animation_idx = 4; }
+                this.button_now[index] = true;
             }
             else {
-                if(LY >= LX && LX < -0.01) { animation_idx = 2; }
-                else if(LX > 0.01) { animation_idx = 3; }
+                if(this.button_now[index]) {
+                    this.button_up[index] = true;
+                }
+                this.button_now[index] = false;
             }
-            this.interface.move(v, animation_idx);
-
-            if (this.button_down[0]) { 
-                this.interface.tryjump();
-            }
-
-            if (this.button_down[2]) {
-                this.interface.click1();
-            }
-            
-            this.interface.movecamera(-RX * 0.05, -RY * 0.05);
-
+        });
+        const zerovec = new THREE.Vector3(0, 0, 0);
+        const direction_front = this.player.facing_direction.clone();
+        // console.log(direction_front);
+        const direction_up = new THREE.Vector3(0, 1, 0);
+        const direction_left = new THREE.Vector3(0, 1, 0);
+        direction_left.cross(direction_front);
+        var v = new THREE.Vector3(0, 0, 0);
+        const vz = direction_front.clone().multiplyScalar(-LY);
+        const vx = direction_left.clone().multiplyScalar(-LX);
+        v.add(vz);
+        v.add(vx);
+        var animation_idx = 0;
+        // v.normalize();
+        if(Math.abs(LY) >= Math.abs(LX)) {
+            if(LY >= LX && LY > 0.01) { animation_idx = 1; }
+            else if(LY < -0.01) { animation_idx = 4; }
         }
+        else {
+            if(LY >= LX && LX < -0.01) { animation_idx = 2; }
+            else if(LX > 0.01) { animation_idx = 3; }
+        }
+        this.interface.move(v, animation_idx);
+
+        if (this.button_down[0]) { 
+            this.interface.tryjump();
+        }
+
+        if (this.button_down[2]) {
+            this.interface.click1();
+        }
+        
+        this.interface.movecamera(-RX * 0.05, -RY * 0.05);
+
+        // }
     }
 }
 
+export class PlayerControl {
+    constructor(player, world, toolsgroup, running, role=1, num_player=1, element) {
+
+        this.controller_type = -1;
+        this.controller = null;
+
+        this.player = player;
+        this.world = world;
+        this.toolsgroup = toolsgroup;
+        this.running = running;
+        this.role = role;
+        this.num_player = num_player;
+        this.element = element;
+        
+        // const element = document.body;
+
+        this.element.addEventListener('click', () => {
+            console.log(this.running.isinLevel);
+            console.log((!this.running.isPaused));
+            console.log((!this.running.isMouseLocked[role]));
+            if(this.running.isinLevel && (!this.running.isPaused) && (!this.running.isMouseLocked[role]) && (this.controller_type < 0)) {
+                console.log("requestPointerLock");
+                this.element.requestPointerLock();
+            }
+        });
+
+        // Listen for Pointer Lock Changes
+        document.addEventListener('pointerlockchange', () => {
+            console.log("pointlockelement", document.pointerLockElement);
+            if (document.pointerLockElement === element) {
+                console.log("Pointer lock enabled, role = ", this.role);
+                this.running.isMouseLocked[role] = true;
+                this.controller_type = 1;
+                this.controller = new PlayerControl_KeyMouse(this.player, this.world, this.toolsgroup, this.running, this.role, this.num_player, this.element);
+            } else if(document.pointerLockElement === null && this.controller_type == 1) {
+                console.log("Pointer lock disabled, role = ", this.role);
+                this.running.isMouseLocked[role] = false;
+                this.controller_type = -1;
+                this.controller = null;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            player.camera.aspect = window.innerWidth / window.innerHeight / this.num_player;
+            player.camera.updateProjectionMatrix();
+        });
+        
+        document.addEventListener('keydown', (event) => {
+            console.log("KEYDOWN", event.key);
+            if(this.running.isMouseLocked[role]) {
+                if(event.key === '`') {
+                    // console.log("Esc Pressed!");
+                    this.running.isMouseLocked[role] = false;
+                    this.controller_type = -1;
+                    
+                    const index = this.running.UsedJoystick.indexOf(this.controller.stick_index);
+                    if(index != -1) {
+                        this.running.UsedJoystick.splice(this.controller.stick_index);
+                    }
+                    this.controller = null;
+                }
+            }
+        });
+
+        // window.addEventListener("gamepadconnected", (event) => {
+        //         console.log("Gamepad connected:", event.gamepad);
+        //         const gamepads = navigator.getGamepads();
+        //         // this.button_now = [];
+        //         // for(var i = 0; i < gamepads.length; ++i) {
+        //         //     const gamepad_i = gamepads[i];
+        //         //     const button_size = gamepad_i.buttons.length;
+        //         //     this.button_now.push(new Array(button_size).fill(false));
+        //         // }
+        // });
+    }
+
+    find_controller() {
+        if(this.controller_type < 0) {
+            const gamepads = navigator.getGamepads();
+            // console.log(gamepads.length);
+            for(var i = 0; i < gamepads.length && this.controller_type < 0; ++i) {
+                const gamepad_i = gamepads[i];
+                if(gamepad_i) {
+                    gamepad_i.buttons.forEach((button, index) => {
+                        if(button.pressed) {
+                            console.log("this.running.UsedJoystick", this.running.UsedJoystick);
+                            if(!(this.running.UsedJoystick.includes(i))) {
+                                this.controller_type = 2;
+                                this.running.UsedJoystick.push(i);
+                                this.running.isMouseLocked[this.role] = true;
+                                this.controller = new PlayerControl_Joystick(this.player, this.world, this.toolsgroup, this.running, this.role, this.num_player, i);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    update() {
+        if(this.controller_type > 0) {
+            this.controller.update();
+        }
+    }
+}

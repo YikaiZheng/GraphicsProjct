@@ -9,7 +9,7 @@ import {Dash, DashesGroup, RaysGroup} from './RaysGroup';
 import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects';
-import { PlayerControl_KeyMouse, PlayerControl_Joystick } from './PlayerControl';
+import { PlayerControl } from './PlayerControl';
 import { Boundary_1 } from './boundaries';
 import React, {useState, useEffect, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -104,7 +104,10 @@ class Running {
         this.manualOpen = true;
         this.isinLevel = false;
         this.isPaused = false;
-        this.isMouseLocked = false;
+        this.isMouseLocked = [];
+        this.isMouseLocked.push(false);
+        this.isMouseLocked.push(false);
+        this.UsedJoystick = [];
     }
 }
 
@@ -597,7 +600,7 @@ async function init(running){
     scene.add(lasers);
 
     // var player1_Control = new PlayerControl_Joystick(player1, world, tools);
-    var player1_Control = new PlayerControl_KeyMouse(player1, world, tools, running);
+    var player1_Control = new PlayerControl(player1, world, tools, running, 1, 1, document.body);
 
     var fixedTimeStep = 1.0 / 60.0; // seconds
     var maxSubSteps = 3;
@@ -612,25 +615,39 @@ async function init(running){
     });
 
     function animate() {
-        if(running.isinLevel && running.isMouseLocked && (!running.isPaused)) {
-            const delta = clock.getDelta();
-            // console.log("delta", delta);
-            world.step(fixedTimeStep, delta, maxSubSteps);
-            // firstPersonControl.update(delta);
-            player1_Control.update();
-            player1.sync();
-            tools.sync();
-            boundary_1.sync();
-            dashes.update();
-            lasers.update();
-            goal0.update(delta);
-            const time = performance.now() * 0.001;
-            water.material.uniforms[ 'time' ].value += 1.0 / 180.0;
-            for(var mixer of mixers){
-                mixer.update(delta);
+        if(running.isinLevel && (!running.isPaused)) {
+            if(running.isMouseLocked[1]) {
+                const delta = clock.getDelta();
+                // console.log("delta", delta);
+                world.step(fixedTimeStep, delta, maxSubSteps);
+                // firstPersonControl.update(delta);
+                player1_Control.update();
+                player1.sync();
+                tools.sync();
+                boundary_1.sync();
+                dashes.update();
+                lasers.update();
+                goal0.update(delta);
+                const time = performance.now() * 0.001;
+                water.material.uniforms[ 'time' ].value += 1.0 / 180.0;
+                for(var mixer of mixers){
+                    mixer.update(delta);
+                }
+                player1.update_mixer(delta);
+                // robotmixer.update(delta*2);
             }
-            player1.update_mixer(delta);
-            // robotmixer.update(delta*2);
+            else {
+                player1_Control.find_controller();
+            }
+        }
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.gammaOutput = true;
+        if(running.isMouseLocked[1]) {
+            renderer.toneMappingExposure = 1;
+        }
+        else {
+            renderer.toneMappingExposure = 0.2;
         }
         renderer.render( scene, player1.camera );
     }

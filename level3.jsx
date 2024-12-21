@@ -7,7 +7,7 @@ import { ToolsGroup } from './ToolsGroup';
 import { cube, connector, emittor, receiver, door, goal, plate, wall, fence } from './InteractiveObjects'
 import {Dash, DashesGroup, RaysGroup} from './RaysGroup';
 import { PhysicsObject, PlayerObject, AnimatedPhysicsObject } from './PhysicsObjects';
-import { PlayerControl_KeyMouse, PlayerControl_Joystick } from './PlayerControl';
+import { PlayerControl } from './PlayerControl';
 import { Boundary_1 } from './boundaries';
 import React, {useState, useEffect, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -104,7 +104,11 @@ class Running {
         this.manualOpen = true;
         this.isinLevel = false;
         this.isPaused = false;
-        this.isMouseLocked = false;
+        this.isMouseLocked = [];
+        this.isMouseLocked.push(false);
+        this.isMouseLocked.push(false);
+        this.isMouseLocked.push(false);
+        this.UsedJoystick = [];
     }
 }
 
@@ -203,6 +207,10 @@ export default function Level3(){
     return(
         <ThemeProvider theme={darkTheme}>
         <div className ="container" id='content'>
+        {/* <div className="split-stacktop">
+            {(running_global.isinLevel && (!running_global.isPaused) && (!running_global.isMouseLocked[1])) && <div id = "cover1"></div>}
+            {(running_global.isinLevel && (!running_global.isPaused) && (!running_global.isMouseLocked[2])) && <div id = "cover2"></div>}
+        </div> */}
         <div id="crossleft">
             <div className="horizontalleft"></div>
             <div className="verticalleft"></div>
@@ -633,7 +641,7 @@ async function init(running){
     tools.add(receiver5);
     tools.add(receiver6);
     tools.add(receiver7);
-    await sleep(5000)
+    await sleep(2000)
 
     lasers.addintersectobjects(tools.children);
     // tools.listenToPointerEvents(renderer, player1.camera);
@@ -644,8 +652,8 @@ async function init(running){
     scene.add(lasers);
 
     // var player1_Control = new PlayerControl_Joystick(player1, world, tools);
-    var player1_Control = new PlayerControl_KeyMouse(player1, world, tools, running,1,2);
-    var player2_Control = new PlayerControl_Joystick(player2, world, tools, running,2,2);
+    var player1_Control = new PlayerControl(player1, world, tools, running,1,2,leftwindow);
+    var player2_Control = new PlayerControl(player2, world, tools, running,2,2,rightwindow);
 
     var fixedTimeStep = 1.0 / 60.0; // seconds
     var maxSubSteps = 3;
@@ -660,29 +668,37 @@ async function init(running){
     });
 
     function animate() {
-        if(running.isinLevel && running.isMouseLocked && (!running.isPaused)) {
-            const delta = clock.getDelta();
-            // console.log("delta", delta);
-            world.step(fixedTimeStep, delta, maxSubSteps);
-            // firstPersonControl.update(delta);
-            player1_Control.update();
-            player1.sync();
-            player2_Control.update();
-            player2.sync();
-            tools.sync();
-            boundary_1.sync();
-            dashes.update();
-            lasers.update();
-            goal0.update(delta);
-            for(var mixer of mixers){
-                mixer.update(delta);
+        if(running.isinLevel && (!running.isPaused)) {
+            if(running.isMouseLocked[1] && running.isMouseLocked[2]) {
+                const delta = clock.getDelta();
+                // console.log("delta", delta);
+                world.step(fixedTimeStep, delta, maxSubSteps);
+                // firstPersonControl.update(delta);
+                player1_Control.update();
+                player1.sync();
+                player2_Control.update();
+                player2.sync();
+                tools.sync();
+                boundary_1.sync();
+                dashes.update();
+                lasers.update();
+                goal0.update(delta);
+                for(var mixer of mixers){
+                    mixer.update(delta);
+                }
+                player1.update_mixer(delta);
+                player2.update_mixer(delta);
+                // robotmixer.update(delta*2);
+                // renderer.render(scene, player1.camera)
             }
-            player1.update_mixer(delta);
-            player2.update_mixer(delta);
-            // robotmixer.update(delta*2);
-            // renderer.render(scene, player1.camera)
+            else if (!running.isMouseLocked[1]) {
+                player1_Control.find_controller();
+            }
+            else if (running.isMouseLocked[1] && (!running.isMouseLocked[2])) {
+                player2_Control.find_controller();
+            }
         }
-        render(renderer, player1, player2, scene, leftwindow, rightwindow);
+        render(renderer, player1, running.isMouseLocked[1], player2, running.isMouseLocked[2], scene, leftwindow, rightwindow);
     }
 
     if ( WebGL.isWebGL2Available() ) {
@@ -735,13 +751,15 @@ function resizeRendererToDisplaySize(renderer) {
 	return width / height;
   }
 
-function render(renderer, player1, player2, scene, view1Elem, view2Elem) {
+function render(renderer, player1, underctrl1, player2, underctrl2, scene, view1Elem, view2Elem) {
   
 	resizeRendererToDisplaySize(renderer);
 
 	// turn on the scissor
 	renderer.setScissorTest(true);
-
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.gammaOutput = true;
 	// render the original view
 	{
 	  const aspect = setScissorForElement(view1Elem,renderer);
@@ -749,6 +767,13 @@ function render(renderer, player1, player2, scene, view1Elem, view2Elem) {
 	  // adjust the camera for this aspect
 	  player1.camera.aspect = aspect;
 	  player1.camera.updateProjectionMatrix();
+      if(underctrl1) {
+        renderer.toneMappingExposure = 1;
+      }
+      else {
+        renderer.toneMappingExposure = 0.2;
+      }
+    //   renderer.gammaFactor = 0; 
 	  renderer.render(scene, player1.camera);
 	}
 	
@@ -762,6 +787,13 @@ function render(renderer, player1, player2, scene, view1Elem, view2Elem) {
 	  player2.camera.updateProjectionMatrix();
 
 	  // render
+      if(underctrl2) {
+        renderer.toneMappingExposure = 1;
+      }
+      else {
+        renderer.toneMappingExposure = 0.2;
+      }
+    //   renderer.gammaFactor = 100; 
 	  renderer.render(scene, player2.camera);
 	}
 }
