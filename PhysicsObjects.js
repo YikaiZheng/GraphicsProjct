@@ -51,7 +51,7 @@ export class AnimatedPhysicsObject extends PhysicsObject {
   
 
 export class PlayerObject extends PhysicsObject {
-    constructor(position, scene, world) {
+    constructor(position, scene, world, num_player = 1) {
 
         const boxSize = { x: 1.2, y: 1.8, z: 0.6 };
         const box_Shape = new CANNON.Box(new CANNON.Vec3(boxSize.x / 2, boxSize.y / 2, boxSize.z / 2));
@@ -70,7 +70,7 @@ export class PlayerObject extends PhysicsObject {
         
         this.init_camera_offset = new THREE.Vector3(0, 0.7, -0.3);
         // this.init_camera_offset = new THREE.Vector3(0, 1.2, 1.5);
-        this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight / num_player, 0.1, 1000 );
         this.camera.position.set(position.x, position.y, position.z);
         this.camera.position.add(this.init_camera_offset);
         this.facing_direction = new THREE.Vector3(0, 0, -1);

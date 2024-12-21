@@ -23,6 +23,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import List from '@mui/material/List';
@@ -117,6 +118,7 @@ export default function Level1(){
     const [settingOpen, setSettingOpen] = useState(false);
     const [passed, setPassed] = useState(false);
     const [manualOpen, setManualOpen] = useState(true);
+    const [helpOpen, setHelpOpen] = useState(false);
     const [settings, setSettings] = useState({fov:75,bgmVolume:0.5,soundVolume:0.9})
     
     running_global.isPaused = paused;
@@ -223,6 +225,16 @@ export default function Level1(){
                     >
                         <MenuIcon />
                     </IconButton>
+                    <IconButton
+                        size="large"
+                        edge="start"
+                        color="inherit"
+                        aria-label="menu"
+                        sx={{ mr: 2 }}
+                        onClick = {()=>{setPaused(true);setHelpOpen(true)}}
+                    >
+                        <HelpOutlineIcon />
+                    </IconButton>
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         第一关 交汇
                     </Typography>
@@ -257,6 +269,9 @@ export default function Level1(){
                 鼠标左键与物品交互
             </Typography>
             <Typography style={{ wordWrap: "break-word" }}>
+                这里的器件错综复杂，有先行者为你留下了一个文件，可以按上方的帮助键查看。
+            </Typography>
+            <Typography style={{ wordWrap: "break-word" }}>
                 ---   
             </Typography>
             <Typography style={{ wordWrap: "break-word" }}>
@@ -269,7 +284,16 @@ export default function Level1(){
                 setManualOpen(false) 
             }}>启程</Button>
         </Dialog>}
-        <Dialog open={paused && ! passed} onClose={()=>{
+        {!loading && <Dialog open={helpOpen} onClose={()=>{setPaused(false);setHelpOpen(false)}} maxWidth = '1200px'>
+            <Box sx={{ m: 2 }}>
+                <img src = "/manual.png"></img>
+            </Box>
+            <Button color ='inherit' variant='contained' onClick = {()=>{
+                setPaused(false)
+                setHelpOpen(false) 
+            }}>关闭文件</Button>
+        </Dialog>}
+        <Dialog open={paused && ! passed && ! helpOpen} onClose={()=>{
             setPaused(false);
         }}>
             <DialogTitle><Typography variant="h6" align="center">暂停</Typography></DialogTitle>

@@ -4,12 +4,14 @@ import { PhysicsObject } from './PhysicsObjects'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 class PlayerInterface {
-    constructor(player, world, toolsgroup, running) {
+    constructor(player, world, toolsgroup, running, role, num_player) {
         this.world = world;
         this.player = player;
         this.toolsgroup = toolsgroup;
         // this.isMouselocked = false;
         this.running = running;
+        this.role = role;
+        this.num_player = num_player
 
         // Element to enable pointer lock (e.g., the entire document body)
         const element = document.body;
@@ -37,7 +39,7 @@ class PlayerInterface {
         });
 
         window.addEventListener('resize', () => {
-            player.camera.aspect = window.innerWidth / window.innerHeight;
+            player.camera.aspect = window.innerWidth / window.innerHeight / this.num_player;
             player.camera.updateProjectionMatrix();
         });
     }
@@ -65,18 +67,18 @@ class PlayerInterface {
         });
 
         window.removeEventListener('resize', () => {
-            player.camera.aspect = window.innerWidth / window.innerHeight;
+            player.camera.aspect = window.innerWidth / window.innerHeight / this.num_player;
             player.camera.updateProjectionMatrix();
         });
     }
 
     movecamera(dX, dY) {
         this.player.rotate(dX, dY);
-        this.toolsgroup.onPointerEvent();
+        this.toolsgroup.onPointerEvent(this.role);
     }
 
     click1() {
-        this.toolsgroup.onClickEvent();
+        this.toolsgroup.onClickEvent(this.role);
     }
 
     move(v, animation_idx) {
@@ -97,10 +99,10 @@ class PlayerInterface {
 }
 
 export class PlayerControl_KeyMouse {
-    constructor(player, world, toolsgroup, running) {
+    constructor(player, world, toolsgroup, running, role=1, num_player=1) {
         this.world = world;
         this.player = player;
-        this.interface = new PlayerInterface(player, world, toolsgroup, running);
+        this.interface = new PlayerInterface(player, world, toolsgroup, running, role, num_player);
         // Track Keyboard Input
         this.key_state = {}; // Object to store key states
         this.key_down = {}; // Object to store key states
@@ -294,10 +296,10 @@ function getGamepad(idx) {
 }
 
 export class PlayerControl_Joystick {
-    constructor(player, world, toolsgroup, running) {
+    constructor(player, world, toolsgroup, running, role = 2, num_player=2) {
         this.world = world;
         this.player = player;
-        this.interface = new PlayerInterface(player, world, toolsgroup, running);
+        this.interface = new PlayerInterface(player, world, toolsgroup, running, role, num_player);
         this.joystick = getGamepad();
         this.stick_index = -1;
         this.button_size = 0;

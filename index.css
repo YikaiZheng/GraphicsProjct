@@ -29,6 +29,68 @@ body {
     background-color: white;
     transform: translateX(-50%);
 }
+
+#crossleft {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: 25%;
+  transform: translate(-25%, -50%);
+  width: 20px;
+  height: 20px;
+  pointer-events: none; /* Make the cross non-interactive */
+}
+#crossleft .horizontalleft {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: white;
+  transform: translateY(-50%);
+}
+#crossleft .verticalleft {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: white;
+  transform: translateX(-50%);
+}
+
+#crossright {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: 75%;
+  transform: translate(-75%, -50%);
+  width: 20px;
+  height: 20px;
+  pointer-events: none; /* Make the cross non-interactive */
+}
+#crossright .horizontalright {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: white;
+  transform: translateY(-50%);
+}
+#crossright .verticalright {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: white;
+  transform: translateX(-50%);
+}
 html, body {
 margin: 0;
 height: 100%;
@@ -63,6 +125,7 @@ height: 100%;
     top: 0;
     left: 0;
     opacity: 1;  /* for demo purpose  */
+    display: block;
 }
 .stack-top{
     z-index: 9;
