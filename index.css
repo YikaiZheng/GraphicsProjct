@@ -33,7 +33,7 @@ body {
 #crossleft {
   position: absolute;
   z-index: 5;
-  top: 50%;
+  top: calc(50% + 20px);
   left: 25%;
   transform: translate(-25%, -50%);
   width: 20px;
@@ -64,7 +64,7 @@ body {
 #crossright {
   position: absolute;
   z-index: 5;
-  top: 50%;
+  top: calc(50% + 20px);
   left: 75%;
   transform: translate(-75%, -50%);
   width: 20px;

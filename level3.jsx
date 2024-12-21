@@ -457,6 +457,7 @@ async function init(running){
     const url = '/level3.glb'; 
     gltfLoader.load(url, (gltf) => {
         var root = gltf.scene;
+        console.log(root);
         root.castShadow = true;
         root.receiveShadow = true;
         root.traverse((child) => {
