@@ -455,8 +455,9 @@ async function init(running){
 
     const gltfLoader = new GLTFLoader();
     const url = '/level3.glb'; 
+    let root;
     gltfLoader.load(url, (gltf) => {
-        var root = gltf.scene;
+        root = gltf.scene;
         console.log(root);
         root.castShadow = true;
         root.receiveShadow = true;
@@ -640,7 +641,10 @@ async function init(running){
     tools.add(receiver5);
     tools.add(receiver6);
     tools.add(receiver7);
-    await sleep(2000)
+    while(!root){
+        await sleep(1000);
+    }
+    await sleep(1000)
 
     lasers.addintersectobjects(tools.children);
     // tools.listenToPointerEvents(renderer, player1.camera);
@@ -656,7 +660,7 @@ async function init(running){
 
     var fixedTimeStep = 1.0 / 60.0; // seconds
     var maxSubSteps = 3;
-
+    var bgmloaded = false;
     const bgm = new THREE.Audio(listener);
     var audioLoader = new THREE.AudioLoader();
     audioLoader.load('level3bgm.mp3', function(AudioBuffer) {
@@ -664,6 +668,7 @@ async function init(running){
         bgm.setLoop(true);
         bgm.setVolume(0.5); 
         bgm.play();
+        bgmloaded = true;
     });
 
     function animate() {
@@ -710,7 +715,10 @@ async function init(running){
         const warning = WebGL.getWebGL2ErrorMessage();
         document.getElementById( 'container' ).appendChild( warning );
     }
-    await sleep(3000);
+    while(!bgmloaded){
+        await sleep(1000);
+    }
+    await sleep(1000);
     if(!running.manualOpen) {
         running.isinLevel = true;
     }
