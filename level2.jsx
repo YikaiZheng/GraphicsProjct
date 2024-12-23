@@ -376,9 +376,9 @@ async function init(running){
 
     const gltfLoader = new GLTFLoader();
     const url = '/level2/level2.gltf'; 
-    var done = false;
+    let root;
     gltfLoader.load(url, (gltf) => {
-        var root = gltf.scene;
+        root = gltf.scene;
         // root.castShadow = true;
         // root.receiveShadow = true;
         root.traverse((child) => {
@@ -417,7 +417,6 @@ async function init(running){
         for(var i of rest){
             scene.add(i)
         }
-        done = true;
     });
 
     const waterGeometry = new THREE.PlaneGeometry( 400, 400, 80, 80 );
@@ -591,9 +590,10 @@ async function init(running){
     tools.add(receiver3);
     tools.add(plate1);
     // tools.add(cube1);
-    while(!done){
+    while(!root){
         await sleep(1000);
     }
+    await sleep(1000)
 
     lasers.addintersectobjects(tools.children);
     // tools.listenToPointerEvents(renderer, player1.camera);
