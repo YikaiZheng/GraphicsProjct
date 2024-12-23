@@ -125,6 +125,9 @@ export default function Level2(){
     const [settings, setSettings] = useState({fov:75,bgmVolume:0.5,soundVolume:0.9})
     
     running_global.isPaused = paused;
+    const handleLevel2Pass = (event) => {
+        if(window.location.pathname == '/level2'){setPaused(true);setPassed(true);running_global.isinLevel = false;}
+    }
     // const ref = useRef(null);
     useEffect(()=>{
         if(window.location.pathname == '/level2'){
@@ -135,7 +138,7 @@ export default function Level2(){
             setLoading(false);
         };
         ready();
-        document.addEventListener('pass',event=>{setPassed(true)})
+        document.addEventListener('pass',handleLevel2Pass)
     }
     },[navigate,restart])
 
@@ -173,6 +176,8 @@ export default function Level2(){
         setConf(null);
         navigate('/');
         setPaused(false);
+        setPassed(false);
+        document.removeEventListener('pass',handleLevel2Pass)
     }
 
     const handleNext =()=>{
@@ -183,6 +188,8 @@ export default function Level2(){
         setConf(null);
         navigate('/level3');
         setPassed(false);
+        setPaused(false);
+        document.removeEventListener('pass',handleLevel2Pass)
     }
 
     const handleSliderChange = (sliderName, value) => {
@@ -274,7 +281,7 @@ export default function Level2(){
                 setManualOpen(false) 
             }}>启程</Button>
         </Dialog>}
-        <Dialog open={paused} onClose={()=>{
+        <Dialog open={paused && !passed} onClose={()=>{
             setPaused(false);
         }}>
             <DialogTitle><Typography variant="h6" align="center">暂停</Typography></DialogTitle>

@@ -127,6 +127,9 @@ export default function Level3(){
     const [settings, setSettings] = useState({fov:75,bgmVolume:0.5,soundVolume:0.9})
     
     running_global.isPaused = paused;
+    const handleLevel3Pass = (event) => {
+        if(window.location.pathname == '/level3'){setPaused(true);setPassed(true);running_global.isinLevel = false;}
+    }
     // const ref = useRef(null);
     useEffect(()=>{
         if(window.location.pathname == '/level3'){
@@ -137,7 +140,7 @@ export default function Level3(){
             setLoading(false);
         };
         ready();
-        document.addEventListener('pass',event=>{setPaused(true);setPassed(true)})
+        document.addEventListener('pass',handleLevel3Pass)
     }
     },[navigate,restart])
 
@@ -175,6 +178,7 @@ export default function Level3(){
         setConf(null);
         navigate('/');
         setPaused(false);
+        document.removeEventListener('pass',handleLevel3Pass)
     }
 
     const handleNext =()=>{
@@ -185,6 +189,8 @@ export default function Level3(){
         setConf(null);
         navigate('/level2');
         setPassed(false);
+        setPaused(false);
+        document.removeEventListener('pass',handleLevel3Pass)
     }
 
     const handleSliderChange = (sliderName, value) => {
