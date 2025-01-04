@@ -1,4 +1,4 @@
 from PIL import Image
-img = Image.open('./public/sunflowers_puresky.jpg')
-img=img.resize((1024,512))
-img.save('./public/sky_1K.jpg')
+img = Image.open('./public/manual.png')
+img=img.resize((800,450))
+img.save('./public/manual.png')

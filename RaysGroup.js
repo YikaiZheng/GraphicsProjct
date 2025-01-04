@@ -60,53 +60,55 @@ export class LaserBeam extends THREE.Mesh{
 		    depthWrite	: false,
 		    transparent	: true
 	    })
-	var geometry	= new THREE.PlaneGeometry(0.1, 1)
-	var nPlanes	= 16;
-	for(var i = 0; i < nPlanes; i++){
-		var mesh = new THREE.Mesh(geometry, material)
-		mesh.rotation.y	= i/nPlanes * Math.PI
-		this.add(mesh)
-	}
-    var color_sprite = '';
-    if(color===0xff3333){
-        color_sprite = 'red'
-    }
-    else if(color===0x3333ff){
-        color_sprite = 'blue'
-    }
-    var textureUrl	= `/${color_sprite}.jpg`;
-	var texture	= new THREE.TextureLoader().load(textureUrl)	
-	var material	= new THREE.SpriteMaterial({
-		map		: texture,
-		blending	: THREE.AdditiveBlending,
-	})
-	var sprite	= new THREE.Sprite(material)
-	sprite.scale.x = 0.5;
-	sprite.scale.y = 1;
+        var geometry	= new THREE.PlaneGeometry(0.1, 1)
+        var nPlanes	= 16;
+        for(var i = 0; i < nPlanes; i++){
+            var mesh = new THREE.Mesh(geometry, material)
+            mesh.rotation.y	= i/nPlanes * Math.PI
+            this.add(mesh)
+        }
+        var color_sprite = '';
+        if(color===0xff3333){
+            color_sprite = 'red'
+        }
+        else if(color===0x3333ff){
+            color_sprite = 'blue'
+        }
+        var textureUrl	= `/${color_sprite}.jpg`;
+        var texture	= new THREE.TextureLoader().load(textureUrl)	
+        var material	= new THREE.SpriteMaterial({
+            map		: texture,
+            blending	: THREE.AdditiveBlending,
+        })
+        var sprite	= new THREE.Sprite(material)
+        sprite.scale.x = 0.5;
+        sprite.scale.y = 1;
 
-	sprite.position.y	= 0.49
-	this.add(sprite);
-    this.lastIntersects	= [];
-    this.raycaster	= new THREE.Raycaster();
-    this.raycaster.layers.enable(1);
-    this.raycaster.ray.origin.copy(this.startposition);
-    // var matrixWorld	= this.matrixWorld.clone();
-    // matrixWorld.setPosition(new THREE.Vector3(0,0,0));		
-	this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
-    this.startobject = startobject;
-    this.endobject = endobject;
-    this._intersectobject = startobject;
-    this.identity = id;
-    this.color = color
-    console.log(this)
+        sprite.position.y	= 0.49
+        this.add(sprite);
+        this.lastIntersects	= [];
+        this.raycaster	= new THREE.Raycaster();
+        this.raycaster.layers.enable(1);
+        this.raycaster.ray.origin.copy(this.startposition);
+        // var matrixWorld	= this.matrixWorld.clone();
+        // matrixWorld.setPosition(new THREE.Vector3(0,0,0));		
+        this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
+        this.startobject = startobject;
+        this.endobject = endobject;
+        this._intersectobject = startobject;
+        this.identity = id;
+        this.color = color
+        console.log(this)
     }
     intersect(intersectobjects){       
-        var intersects = this.raycaster.intersectObjects(intersectobjects, false);         //TODO: Recompute origin and direction before intersecting
-        // console.log(intersects.length)
-        var position = intersects[0].point;
+        // console.log("INTERSECT HAPPENS");
+        // console.log("intersectobj:", intersectobjects);
+        // console.log("startobj:", this.startobject);
+        // console.log("endobj", this.endobject);
         const pos = computepositions(this.startobject,this.endobject);
         const startposition = pos[0];
-        const dvector = new THREE.Vector3().subVectors(position, startposition);
+        const endposition = pos[1];
+        var dvector = new THREE.Vector3().subVectors(endposition, startposition);
         length = dvector.length();
         // console.log(dvector);
         const theta = Math.acos(dvector.y/length);
@@ -116,35 +118,57 @@ export class LaserBeam extends THREE.Mesh{
             phi = phi + Math.PI;
         }
         const euler = new THREE.Euler(theta,phi,0,'YXZ');
+        this.raycaster.ray.origin.copy(startposition);
+        this.raycaster.ray.direction.set(0,1,0).applyEuler(euler).normalize();
+        var intersects = this.raycaster.intersectObjects(intersectobjects, false);         //TODO: Recompute origin and direction before intersecting
+        // console.log(intersects.length)
+        
+        var firstvalid = 0
+        var intersectobject = intersects[firstvalid].object;
+        console.log(intersectobject)
+        if(intersectobject.identity===this.startobject.identity){
+            firstvalid = firstvalid + 1
+        }
+        intersectobject = intersects[firstvalid].object;
+        console.log(intersectobject)
+        if(intersectobject._attached){
+            firstvalid = firstvalid + 1
+        }
+        intersectobject = intersects[firstvalid].object;
+        console.log(intersectobject)
+        var position = intersects[firstvalid].point;
+        dvector = new THREE.Vector3().subVectors(position, startposition);
         this.position.set(startposition.x+dvector.x/2,startposition.y+dvector.y/2,startposition.z+dvector.z/2);
         this.rotation.copy(euler);                                                                                        //First update the geometry of the laser. This can be helpful when connectors' position change without picking it (e.g. lifted up by fan)
         var distance = position.distanceTo(this.raycaster.ray.origin)
         this.scale.y = distance+0.05;
         this.children[this.children.length-1].scale.y = 0.49/(distance+0.01);
-        var intersectobject = intersects[0].object;
-        if(intersectobject.identity===this.startobject.identity){
-            intersectobject = intersects[1].object;
-        }
         if(intersectobject.identity === this.endobject.identity && this._intersectobject.identity!=this.endobject.identity){        //If reach endobject, the two objects are connected
-            _event.type = 'receive';
-            _event.color = this.color;
-            _event.sourceobject = this.startobject;
-            this.endobject.dispatchEvent(_event);
+            // _event.type = 'receive';
+            // _event.color = this.color;
+            // _event.sourceobject = this.startobject;
+            // this.endobject.dispatchEvent(_event);
+            // console.log(this.endobject)
+            this.endobject.onReceive(this.startobject, this.color);
         }
         if(intersectobject.identity != this.endobject.identity && this._intersectobject.identity===this.endobject.identity){        //If cannot reach endobject, disconnected
-            _event.type = 'break';
-            _event.color = this.color;
-            _event.sourceobject = this.startobject;
-            this.endobject.dispatchEvent(_event);
+            // _event.type = 'break';
+            // _event.color = this.color;
+            // _event.sourceobject = this.startobject;
+            // this.endobject.dispatchEvent(_event);
+            // console.log("onBreak", this.startobject);
+            this.endobject.onBreak(this.startobject, this.color);
         }
         this._intersectobject = intersectobject;
     }
     delete(){
         if(this._intersectobject.identity === this.endobject.identity){
-            _event.type = 'break';
-            _event.color = this.color;
-            _event.sourceobject = this.startobject;
-            this.endobject.dispatchEvent(_event);                    
+            // _event.type = 'break';
+            // _event.color = this.color;
+            // _event.sourceobject = this.startobject;
+            // this.endobject.dispatchEvent(_event);
+            
+            this.endobject.onBreak(this.startobject, this.color);                    
         }
         this.material.dispose();
         this.geometry.dispose();
@@ -183,6 +207,9 @@ export class RaysGroup extends THREE.Group{
         }
     }
     addLaser(color,startobject,endobject){
+        console.log("ADD LASER");
+        console.log("start object:", startobject);
+        console.log("end object:", endobject);
         this.add(new LaserBeam(color,startobject,endobject,this._identity));
         this._identity += 1;
     }
