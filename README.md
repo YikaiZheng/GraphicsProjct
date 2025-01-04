@@ -6,3 +6,4 @@ The game is inspired by The Talos Principle. The player needs to utilize instrum
 To run locally, run `npm install` to add the necessary packages and run `npx vite`.
 
 This project is deployed with vercel.
+
